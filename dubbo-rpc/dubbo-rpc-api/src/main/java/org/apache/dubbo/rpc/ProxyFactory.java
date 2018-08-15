@@ -28,9 +28,11 @@ import org.apache.dubbo.common.extension.SPI;
 public interface ProxyFactory {
 
     /**
+     * 创建Proxy，在引用服务调用
+     *
      * create proxy.
      *
-     * @param invoker
+     * @param invoker  consumer对provider调用的invoker
      * @return proxy
      */
     @Adaptive({Constants.PROXY_KEY})
@@ -46,12 +48,15 @@ public interface ProxyFactory {
     <T> T getProxy(Invoker<T> invoker, boolean generic) throws RpcException;
 
     /**
+     * 创建Invoker,在暴露服务时调用
+     *
      * create invoker.
      *
+     *
      * @param <T>
-     * @param proxy
-     * @param type
-     * @param url
+     * @param proxy  service对象
+     * @param type   service接口类型
+     * @param url    service对应的Dubbo url
      * @return invoker
      */
     @Adaptive({Constants.PROXY_KEY})

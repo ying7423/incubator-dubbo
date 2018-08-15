@@ -311,7 +311,7 @@
             </xsd:extension>
         </xsd:complexContent>
     </xsd:complexType>
-
+    <!-- <xsd:complexType name=""> ，定义了复杂类型。例如 <xsd:complexType name="applicationType" /> -->
     <xsd:complexType name="applicationType">
         <xsd:sequence minOccurs="0" maxOccurs="unbounded">
             <xsd:element ref="parameter" minOccurs="0" maxOccurs="unbounded"/>
@@ -1140,7 +1140,7 @@
             </xsd:appinfo>
         </xsd:annotation>
     </xsd:element>
-
+    <!-- <xsd:element name="" />  定义了元素的名称  例如，<xsd:element name="application" /> 对应 <dubbo:application /> -->
     <xsd:element name="application" type="applicationType">
         <xsd:annotation>
             <xsd:documentation><![CDATA[ The application config ]]></xsd:documentation>

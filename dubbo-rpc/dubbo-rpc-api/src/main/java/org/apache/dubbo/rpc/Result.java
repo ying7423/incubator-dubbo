@@ -19,6 +19,7 @@ package org.apache.dubbo.rpc;
 import java.util.Map;
 
 /**
+ * 会话域，持有调用过程中返回值，异常等
  * RPC invoke result. (API, Prototype, NonThreadSafe)
  *
  * @serial Don't change the class name and package name.
@@ -73,6 +74,7 @@ public interface Result {
 
 
     /**
+     * 隐式相关参数，与Http Response中的header类似
      * get attachments.
      *
      * @return attachments.

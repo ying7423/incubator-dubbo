@@ -21,6 +21,7 @@ import org.apache.dubbo.common.extension.Adaptive;
 import org.apache.dubbo.common.extension.SPI;
 
 /**
+ * 服务域 它是invoker暴露和引用的主功能入口
  * Protocol. (API/SPI, Singleton, ThreadSafe)
  */
 @SPI("dubbo")

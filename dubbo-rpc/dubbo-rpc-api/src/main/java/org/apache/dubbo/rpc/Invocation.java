@@ -19,6 +19,7 @@ package org.apache.dubbo.rpc;
 import java.util.Map;
 
 /**
+ * 会话域 持有调用过程中的变量，比如:方法名，参数等
  * Invocation. (API, Prototype, NonThreadSafe)
  *
  * @serial Don't change the class name and package name.
@@ -52,6 +53,7 @@ public interface Invocation {
     Object[] getArguments();
 
     /**
+     * 隐式相关参数  与HttpRequest中的header类似，属于类似于上下文
      * get attachments.
      *
      * @return attachments.

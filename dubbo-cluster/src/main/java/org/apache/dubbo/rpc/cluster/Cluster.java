@@ -34,7 +34,7 @@ public interface Cluster {
 
     /**
      * Merge the directory invokers to a virtual invoker.
-     *
+     * 与directory中的多个invoker伪装成一个invoker，伪装过程包含了容错逻辑，调用失败后，重试另一个
      * @param <T>
      * @param directory
      * @return cluster invoker
