@@ -162,6 +162,7 @@ public abstract class AbstractConfig implements Serializable {
                         }
                     }
                     if (value != null && value.length() > 0) {
+                        //将包装类型转为基本类型
                         method.invoke(config, convertPrimitive(method.getParameterTypes()[0], value));
                     }
                 }

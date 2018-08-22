@@ -291,7 +291,9 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
             checkRef();
             generic = Boolean.FALSE.toString();
         }
+        // 处理服务接口客户端本地代理( `local` )相关。实际目前已经废弃，使用 `stub` 属性,参见 `AbstractInterfaceConfig#setLocal` 方法。
         if (local != null) {
+            // 设为 true，表示使用缺省代理类名，即：接口名 + Local 后缀
             if ("true".equals(local)) {
                 local = interfaceName + "Local";
             }
@@ -324,6 +326,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         checkProtocol();
         appendProperties(this);
         checkStubAndMock(interfaceClass);
+        //服务发现
         if (path == null || path.length() == 0) {
             path = interfaceName;
         }
@@ -422,7 +425,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                                                 throw new IllegalArgumentException("argument config error : the index attribute and type attribute not match :index :" + argument.getIndex() + ", type:" + argument.getType());
                                             }
                                         } else {
-                                            // multiple callbacks in the method
+                                            // multiple callbacks in the method(存在重载的情况)
                                             for (int j = 0; j < argtypes.length; j++) {
                                                 Class<?> argclazz = argtypes[j];
                                                 if (argclazz.getName().equals(argument.getType())) {
@@ -436,6 +439,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                                     }
                                 }
                             }
+                            //指定单个参数的位置
                         } else if (argument.getIndex() != -1) {
                             appendParameters(map, argument, method.getName() + "." + argument.getIndex());
                         } else {
@@ -559,6 +563,9 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
     }
 
     /**
+     * 查找主机 Host ，参见文档《主机绑定》https://dubbo.gitbooks.io/dubbo-user-book/demos/hostname-binding.html
+     *
+     * 推荐阅读文章《dubbo注册服务IP解析异常及IP解析源码分析》 https://segmentfault.com/a/1190000010550512
      * Register & bind IP address for service provider, can be configured separately.
      * Configuration priority: environment variables -> java system properties -> host property in config file ->
      * /etc/hosts -> default network address -> first available network address
@@ -570,7 +577,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
      */
     private String findConfigedHosts(ProtocolConfig protocolConfig, List<URL> registryURLs, Map<String, String> map) {
         boolean anyhost = false;
-
+        // 第一优先级，从环境变量，获得绑定的 Host 。可强制指定，参见仓库 https://github.com/dubbo/dubbo-docker-sample
         String hostToBind = getValueFromConfig(protocolConfig, Constants.DUBBO_IP_TO_BIND);
         if (hostToBind != null && hostToBind.length() > 0 && isInvalidLocalHost(hostToBind)) {
             throw new IllegalArgumentException("Specified invalid bind ip from property:" + Constants.DUBBO_IP_TO_BIND + ", value:" + hostToBind);
@@ -578,10 +585,12 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
 
         // if bind ip is not found in environment, keep looking up
         if (hostToBind == null || hostToBind.length() == 0) {
+            // 第二优先级，从 ProtocolConfig 获得 Host 。
             hostToBind = protocolConfig.getHost();
             if (provider != null && (hostToBind == null || hostToBind.length() == 0)) {
                 hostToBind = provider.getHost();
             }
+            // 第三优先级，若非合法的本地 Host ，使用 InetAddress.getLocalHost().getHostAddress() 获得 Host
             if (isInvalidLocalHost(hostToBind)) {
                 anyhost = true;
                 try {
@@ -589,6 +598,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                 } catch (UnknownHostException e) {
                     logger.warn(e.getMessage(), e);
                 }
+                // 第四优先级，若是非法的本地 Host ，通过使用 `registryURLs` 启动 Server ，并本地连接，获得 Host 。
                 if (isInvalidLocalHost(hostToBind)) {
                     if (registryURLs != null && !registryURLs.isEmpty()) {
                         for (URL registryURL : registryURLs) {
@@ -614,6 +624,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                             }
                         }
                     }
+                    // 第五优先级，若是非法的本地 Host ，获得本地网卡，第一个合法的 IP
                     if (isInvalidLocalHost(hostToBind)) {
                         hostToBind = getLocalHost();
                     }
@@ -622,7 +633,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         }
 
         map.put(Constants.BIND_IP_KEY, hostToBind);
-
+        // 获得 `hostToRegistry` ，默认使用 `hostToBind` 。可强制指定，参见仓库 https://github.com/dubbo/dubbo-docker-sample
         // registry ip is not used for bind ip by default
         String hostToRegistry = getValueFromConfig(protocolConfig, Constants.DUBBO_IP_TO_REGISTRY);
         if (hostToRegistry != null && hostToRegistry.length() > 0 && isInvalidLocalHost(hostToRegistry)) {
@@ -638,6 +649,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
     }
 
     /**
+     * 查找端口，参见文档《主机绑定》https://dubbo.gitbooks.io/dubbo-user-book/demos/hostname-binding.html
      * Register port and bind port for the provider, can be configured separately
      * Configuration priority: environment variable -> java system properties -> port property in protocol config file
      * -> protocol default port
@@ -648,25 +660,30 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
      */
     private Integer findConfigedPorts(ProtocolConfig protocolConfig, String name, Map<String, String> map) {
         Integer portToBind = null;
-
+        // 第一优先级，从环境变量，获得绑定的 Port 。可强制指定，参见仓库 https://github.com/dubbo/dubbo-docker-sample
         // parse bind port from environment
         String port = getValueFromConfig(protocolConfig, Constants.DUBBO_PORT_TO_BIND);
         portToBind = parsePort(port);
 
         // if there's no bind port found from environment, keep looking up.
         if (portToBind == null) {
+            // 第二优先级，从 ProtocolConfig 获得 Port 。
             portToBind = protocolConfig.getPort();
             if (provider != null && (portToBind == null || portToBind == 0)) {
                 portToBind = provider.getPort();
             }
+            // 第三优先级，获得协议对应的缺省端口，
             final int defaultPort = ExtensionLoader.getExtensionLoader(Protocol.class).getExtension(name).getDefaultPort();
             if (portToBind == null || portToBind == 0) {
                 portToBind = defaultPort;
             }
+            // 第四优先级，随机获得端口
             if (portToBind == null || portToBind <= 0) {
                 portToBind = getRandomPort(name);
                 if (portToBind == null || portToBind < 0) {
+                    // 获得可用端口
                     portToBind = getAvailablePort(defaultPort);
+                    // 添加到缓存
                     putRandomPort(name, portToBind);
                 }
                 logger.warn("Use random available port(" + portToBind + ") for protocol " + name);
@@ -676,6 +693,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         // save bind port, used as url's key later
         map.put(Constants.BIND_PORT_KEY, String.valueOf(portToBind));
 
+        // 获得 `portToRegistry` ，默认使用 `portToBind` 。可强制指定，参见仓库 https://github.com/dubbo/dubbo-docker-sample
         // registry port, not used as bind port by default
         String portToRegistryStr = getValueFromConfig(protocolConfig, Constants.DUBBO_PORT_TO_REGISTRY);
         Integer portToRegistry = parsePort(portToRegistryStr);

@@ -331,6 +331,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
             if (mock.startsWith(Constants.RETURN_PREFIX)) {
                 String value = mock.substring(Constants.RETURN_PREFIX.length());
                 try {
+                    //todo ying7423 有待重新考虑
                     MockInvoker.parseMockValue(value);
                 } catch (Exception e) {
                     throw new IllegalStateException("Illegal mock json value in <dubbo:service ... mock=\"" + mock + "\" />");
