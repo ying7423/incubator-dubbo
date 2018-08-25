@@ -1,2 +1,4 @@
+##xmlns 为 http://code.alibabatech.com/schema/dubbo/dubbo.xsd
+##xsd 为 META-INF/dubbo.xsd
 http\://dubbo.apache.org/schema/dubbo/dubbo.xsd=META-INF/dubbo.xsd
 http\://code.alibabatech.com/schema/dubbo/dubbo.xsd=META-INF/compat/dubbo.xsd

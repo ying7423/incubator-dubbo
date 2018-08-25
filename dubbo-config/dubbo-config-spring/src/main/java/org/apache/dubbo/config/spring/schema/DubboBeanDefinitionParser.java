@@ -66,6 +66,11 @@ public class DubboBeanDefinitionParser implements BeanDefinitionParser {
     private final Class<?> beanClass;
     private final boolean required;
 
+    /**
+     *
+     * @param beanClass Bean对象的类
+     * @param required  是否需要在Bean对象的编号（id）不存在时，自动生成编号，无需被其他应用引用的配置对象，无需自动生成编号，例如：<dubbo:reference />
+     */
     public DubboBeanDefinitionParser(Class<?> beanClass, boolean required) {
         this.beanClass = beanClass;
         this.required = required;
@@ -75,13 +80,15 @@ public class DubboBeanDefinitionParser implements BeanDefinitionParser {
     private static BeanDefinition parse(Element element, ParserContext parserContext, Class<?> beanClass, boolean required) {
         RootBeanDefinition beanDefinition = new RootBeanDefinition();
         beanDefinition.setBeanClass(beanClass);
+        //引用缺省是延迟初始化的，只有引用被注入到其他bean，才会被初始化，如果需要饥饿加载，即没有引用也立即生成动态代理，可以配置<dubbo:reference ... init="true"/>
         beanDefinition.setLazyInit(false);
         // 解析配置对象的 id 。若不存在，则进行生成
         String id = element.getAttribute("id");
         if ((id == null || id.length() == 0) && required) {
-            // 生成 id 。不同的配置对象，会存在不同。
+            // 生成 id 。不同的配置对象，会存在不同。规则为name > 特殊规则 > className
             String generatedBeanName = element.getAttribute("name");
             if (generatedBeanName == null || generatedBeanName.length() == 0) {
+                //如果是协议的配置，缺省值为dubbo
                 if (ProtocolConfig.class.equals(beanClass)) {
                     generatedBeanName = "dubbo";
                 } else {
@@ -110,7 +117,7 @@ public class DubboBeanDefinitionParser implements BeanDefinitionParser {
         // 处理 `<dubbo:protocol` /> 的特殊情况
         if (ProtocolConfig.class.equals(beanClass)) {
             // 需要满足第 220 至 233 行。
-            // 例如：【顺序要这样】
+            // 例如：【顺序要这样】 处理在service或者reference中定义了dubbo的情况
             // <dubbo:service interface="com.alibaba.dubbo.demo.DemoService" protocol="dubbo" ref="demoService"/>
             // <dubbo:protocol id="dubbo" name="dubbo" port="20880"/>
             for (String name : parserContext.getRegistry().getBeanDefinitionNames()) {
@@ -146,6 +153,7 @@ public class DubboBeanDefinitionParser implements BeanDefinitionParser {
         }
         //已解析的属性集合
         Set<String> props = new HashSet<String>();
+        //解析的参数集合
         ManagedMap parameters = null;
         // 循环 Bean 对象的 setting 方法，将属性添加到 Bean 对象的属性赋值
         for (Method setter : beanClass.getMethods()) {
@@ -231,7 +239,7 @@ public class DubboBeanDefinitionParser implements BeanDefinitionParser {
                                     reference = protocol;
                                     // 处理 `onreturn` 属性
                                 } else if ("onreturn".equals(property)) {
-                                    // 按照 `.` 拆分
+                                    // 按照 `.` 拆分 最后一个.是为了分离包和名字
                                     int index = value.lastIndexOf(".");
                                     String returnRef = value.substring(0, index);
                                     String returnMethod = value.substring(index + 1);
@@ -241,7 +249,6 @@ public class DubboBeanDefinitionParser implements BeanDefinitionParser {
                                     beanDefinition.getPropertyValues().addPropertyValue("onreturnMethod", returnMethod);
                                     // 处理 `onthrow` 属性
                                 } else if ("onthrow".equals(property)) {
-                                    // 按照 `.` 拆分
                                     int index = value.lastIndexOf(".");
                                     String throwRef = value.substring(0, index);
                                     String throwMethod = value.substring(index + 1);
@@ -276,7 +283,7 @@ public class DubboBeanDefinitionParser implements BeanDefinitionParser {
             }
         }
 
-        //将XML元素未遍历到的属性，添加到parameters集合中
+        //将XML元素未遍历到的属性，添加到parameters集合中,目前测试下来，不存在这样的情况
         NamedNodeMap attributes = element.getAttributes();
         int len = attributes.getLength();
         for (int i = 0; i < len; i++) {
@@ -370,6 +377,11 @@ public class DubboBeanDefinitionParser implements BeanDefinitionParser {
     }
 
     /**
+     * <bean id="demoDAO" class="com.alibaba.dubbo.demo.provider.DemoDAO" />
+
+     <dubbo:service id="sa" interface="com.alibaba.dubbo.demo.DemoService"  class="com.alibaba.dubbo.demo.provider.DemoServiceImpl">
+     <property name="demoDAO" ref="demoDAO" />
+     </dubbo:service>
      * 解析 <dubbo:service class="" /> 情况下，内涵的 `<property />` 的赋值。
      * @param nodeList
      * @param beanDefinition
@@ -392,7 +404,7 @@ public class DubboBeanDefinitionParser implements BeanDefinitionParser {
                                 //其次使用 "ref" 属性。
                             } else if (ref != null && ref.length() > 0) {
                                 beanDefinition.getPropertyValues().addPropertyValue(name, new RuntimeBeanReference(ref));
-                                //属性补全，抛出异常。
+                                //属性不全，抛出异常。
                             } else {
                                 throw new UnsupportedOperationException("Unsupported <property name=\"" + name + "\"> sub tag, Only supported <property name=\"" + name + "\" ref=\"...\" /> or <property name=\"" + name + "\" value=\"...\" />");
                             }
@@ -403,6 +415,12 @@ public class DubboBeanDefinitionParser implements BeanDefinitionParser {
         }
     }
 
+    /**
+     * 解析 <dubbo:parameter />
+     * @param nodeList 子元素节点数组
+     * @param beanDefinition Bean定义对象
+     * @return
+     */
     @SuppressWarnings("unchecked")
     private static ManagedMap parseParameters(NodeList nodeList, RootBeanDefinition beanDefinition) {
         if (nodeList != null && nodeList.getLength() > 0) {
@@ -410,6 +428,7 @@ public class DubboBeanDefinitionParser implements BeanDefinitionParser {
             for (int i = 0; i < nodeList.getLength(); i++) {
                 Node node = nodeList.item(i);
                 if (node instanceof Element) {
+                    //只解析子元素的<dubbo:parameter />
                     if ("parameter".equals(node.getNodeName())
                             || "parameter".equals(node.getLocalName())) {
                         if (parameters == null) {
@@ -473,6 +492,13 @@ public class DubboBeanDefinitionParser implements BeanDefinitionParser {
         }
     }
 
+    /**
+     * 解析<dubbo:argument />标签，与parseMethods基本一致
+     * @param id
+     * @param nodeList
+     * @param beanDefinition
+     * @param parserContext
+     */
     @SuppressWarnings("unchecked")
     private static void parseArguments(String id, NodeList nodeList, RootBeanDefinition beanDefinition,
                                        ParserContext parserContext) {

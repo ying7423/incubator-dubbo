@@ -98,6 +98,10 @@ public abstract class AbstractConfig implements Serializable {
         return value;
     }
 
+    /**
+     * 读取启动参数变量和properties配置到配置对象，调用对象的set方法来进行设置
+     * @param config
+     */
     protected static void appendProperties(AbstractConfig config) {
         if (config == null) {
             return;
@@ -107,6 +111,8 @@ public abstract class AbstractConfig implements Serializable {
         for (Method method : methods) {
             try {
                 String name = method.getName();
+                //其中唯一参数为基本类型，决定了一个配置对象无法设置另外一个配置对象数组为属性，即没有多注册中心，多协议等情况。
+                // 例如，ServiceConfig 无法通过属性配置设置多个 ProtocolConfig 对象。
                 if (name.length() > 3 && name.startsWith("set") && Modifier.isPublic(method.getModifiers())
                         && method.getParameterTypes().length == 1 && isPrimitive(method.getParameterTypes()[0])) {
                     // 获得属性名，例如 `ApplicationConfig#setName(...)` 方法，对应的属性名为 name 。

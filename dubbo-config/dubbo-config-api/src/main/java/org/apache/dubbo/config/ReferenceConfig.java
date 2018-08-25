@@ -158,9 +158,11 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
     }
 
     public synchronized T get() {
+        // 已销毁，不可获得
         if (destroyed) {
             throw new IllegalStateException("Already destroyed!");
         }
+        // 初始化
         if (ref == null) {
             init();
         }
@@ -185,6 +187,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
     }
 
     private void init() {
+        // 已经初始化，直接返回
         if (initialized) {
             return;
         }
@@ -299,6 +302,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
         checkStubAndMock(interfaceClass);
         // 将 `side`，`dubbo`，`timestamp`，`pid` 参数，添加到 `map` 集合中。
         Map<String, String> map = new HashMap<String, String>();
+        //todo 查看AsyncFor注解的作用 详见http://dubbo.apache.org/zh-cn/blog/dubbo-new-async.html
         resolveAsyncInterface(interfaceClass, map);
         Map<Object, Object> attributes = new HashMap<Object, Object>();
         map.put(Constants.SIDE_KEY, Constants.CONSUMER_SIDE);
@@ -344,7 +348,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
                 }
                 // 将带有 @Parameter(attribute = true) 配置对象的属性，添加到参数集合。
                 appendAttributes(attributes, method, prefix + "." + method.getName());
-                // 检查属性集合中的事件通知方法是否正确。若正确，进行转换。
+                // 检查属性集合中的事件通知方法是否正确。若正确，进行转换。事件通知方法包括：oninvoke、onreturn、onthrow
                 checkAndConvertImplicitConfig(method, map, attributes);
             }
         }
@@ -357,7 +361,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
         }
         map.put(Constants.REGISTER_IP_KEY, hostToRegistry);
 
-        //attributes are stored by system context.
+        //attributes are stored by system context.  添加到 StaticContext 进行缓存
         StaticContext.getSystemContext().putAll(attributes);
         ref = createProxy(map);
         ConsumerModel consumerModel = new ConsumerModel(getUniqueServiceName(), this, ref, interfaceClass.getMethods());

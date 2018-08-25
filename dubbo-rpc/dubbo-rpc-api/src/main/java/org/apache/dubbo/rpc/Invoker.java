@@ -19,7 +19,9 @@ package org.apache.dubbo.rpc;
 import org.apache.dubbo.common.Node;
 
 /**
- * 实体域
+ * 实体域,代表dubbo的核心模型，其他模型可向它靠拢，或者转换成它
+ * 它代表一个可执行体，可向它发起invoke调用
+ * 它有可能是一个本地的实现，也可能是一个远程的实现，也可能是一个集群实现
  * Invoker. (API/SPI, Prototype, ThreadSafe)
  *
  * @see org.apache.dubbo.rpc.Protocol#refer(Class, org.apache.dubbo.common.URL)

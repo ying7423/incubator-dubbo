@@ -9,11 +9,13 @@
     <xsd:import namespace="http://www.springframework.org/schema/beans"/>
     <xsd:import namespace="http://www.springframework.org/schema/tool"/>
 
+
     <xsd:annotation>
         <xsd:documentation>
             <![CDATA[ Namespace support for the dubbo services provided by dubbo framework. ]]></xsd:documentation>
     </xsd:annotation>
 
+    <!-- <xsd:complexType name=""> ，定义了复杂类型。例如 <xsd:complexType name="applicationType" /> -->
     <xsd:complexType name="abstractMethodType">
         <xsd:attribute name="timeout" type="xsd:string" use="optional" default="0">
             <xsd:annotation>
@@ -311,7 +313,7 @@
             </xsd:extension>
         </xsd:complexContent>
     </xsd:complexType>
-    <!-- <xsd:complexType name=""> ，定义了复杂类型。例如 <xsd:complexType name="applicationType" /> -->
+
     <xsd:complexType name="applicationType">
         <xsd:sequence minOccurs="0" maxOccurs="unbounded">
             <xsd:element ref="parameter" minOccurs="0" maxOccurs="unbounded"/>
@@ -1129,6 +1131,8 @@
         </xsd:attribute>
     </xsd:complexType>
 
+    <!-- <xsd:element name="" />  定义了元素的名称  例如，<xsd:element name="application" /> 对应 <dubbo:application /> -->
+    <!--<xsd:element type="" /> ，定义了内建数据类型的名称。例如，<xsd:element type="applicationType" /> 对应 <xsd:complexType name="applicationType" /> -->
     <xsd:element name="annotation" type="annotationType">
         <xsd:annotation>
             <xsd:documentation><![CDATA[ The annotation config ]]></xsd:documentation>
@@ -1140,7 +1144,7 @@
             </xsd:appinfo>
         </xsd:annotation>
     </xsd:element>
-    <!-- <xsd:element name="" />  定义了元素的名称  例如，<xsd:element name="application" /> 对应 <dubbo:application /> -->
+
     <xsd:element name="application" type="applicationType">
         <xsd:annotation>
             <xsd:documentation><![CDATA[ The application config ]]></xsd:documentation>
