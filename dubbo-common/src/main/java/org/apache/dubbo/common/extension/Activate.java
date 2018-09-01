@@ -34,7 +34,7 @@ import java.lang.annotation.Target;
  * </ol>
  * SPI provider can call {@link ExtensionLoader#getActivateExtension(URL, String, String)} to find out all activated
  * extensions with the given criteria.
- *
+ * 自动激活条件的标记
  * @see SPI
  * @see URL
  * @see ExtensionLoader

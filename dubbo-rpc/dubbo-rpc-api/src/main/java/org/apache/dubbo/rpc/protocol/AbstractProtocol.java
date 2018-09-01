@@ -37,7 +37,14 @@ import java.util.concurrent.ConcurrentHashMap;
 public abstract class AbstractProtocol implements Protocol {
 
     protected final Logger logger = LoggerFactory.getLogger(getClass());
-
+    /**
+     * Exporter 集合
+     *
+     * InjvmProtocol 使用 URL#getServiceKey() 方法
+     * DubboProtocol 使用 #serviceKey(URL) 方法。
+     * key: 服务键 {@link #serviceKey(URL)} 或 {@link URL#getServiceKey()} 。
+     *      不同协议会不同
+     */
     protected final Map<String, Exporter<?>> exporterMap = new ConcurrentHashMap<String, Exporter<?>>();
 
     //TODO SOFEREFENCE

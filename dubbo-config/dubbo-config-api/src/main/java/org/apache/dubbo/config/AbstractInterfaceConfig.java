@@ -169,7 +169,13 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         }
     }
 
+    /**
+     * 加载注册中心 URL 数组
+     * @param provider
+     * @return
+     */
     protected List<URL> loadRegistries(boolean provider) {
+        // 校验 RegistryConfig 配置数组。
         checkRegistry();
         List<URL> registryList = new ArrayList<URL>();
         if (registries != null && !registries.isEmpty()) {
@@ -178,6 +184,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
                 if (address == null || address.length() == 0) {
                     address = Constants.ANYHOST_VALUE;
                 }
+                //从启动参数读取
                 String sysaddress = System.getProperty("dubbo.registry.address");
                 if (sysaddress != null && sysaddress.length() > 0) {
                     address = sysaddress;
@@ -186,6 +193,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
                     Map<String, String> map = new HashMap<String, String>();
                     appendParameters(map, application);
                     appendParameters(map, config);
+                    // 添加 `path` `dubbo` `timestamp` `pid` 到 `map` 集合中。
                     map.put("path", RegistryService.class.getName());
                     map.put("dubbo", Version.getProtocolVersion());
                     map.put(Constants.TIMESTAMP_KEY, String.valueOf(System.currentTimeMillis()));
@@ -201,8 +209,11 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
                     }
                     List<URL> urls = UrlUtils.parseURLs(address, map);
                     for (URL url : urls) {
+                        // 设置 `registry=${protocol}` 和 `protocol=registry` 到 URL
                         url = url.addParameter(Constants.REGISTRY_KEY, url.getProtocol());
                         url = url.setProtocol(Constants.REGISTRY_PROTOCOL);
+                        //若是服务提供者，判断是否只订阅不注册。如果是，不添加结果到 registryList 中
+                        //若是服务消费者，判断是否只注册不订阅。如果是，不添加到结果 registryList
                         if ((provider && url.getParameter(Constants.REGISTER_KEY, true))
                                 || (!provider && url.getParameter(Constants.SUBSCRIBE_KEY, true))) {
                             registryList.add(url);

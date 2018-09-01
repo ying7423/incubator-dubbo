@@ -27,6 +27,12 @@ import java.util.Set;
 
 public class UrlUtils {
 
+    /**
+     * 解析单个url，将defaults里面的参数合并到address中
+     * @param address
+     * @param defaults
+     * @return
+     */
     public static URL parseURL(String address, Map<String, String> defaults) {
         if (address == null || address.length() == 0) {
             return null;
@@ -128,6 +134,7 @@ public class UrlUtils {
         if (address == null || address.length() == 0) {
             return null;
         }
+        //address 可以使用 "|" 或者 ";" 作为分隔符，设置多个注册中心分组。注意，一个注册中心集群是一个分组，而不是多个。
         String[] addresses = Constants.REGISTRY_SPLIT_PATTERN.split(address);
         if (addresses == null || addresses.length == 0) {
             return null; //here won't be empty
