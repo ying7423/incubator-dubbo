@@ -247,6 +247,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
                 monitor.setProtocol(monitorProtocol);
             }
         }
+
         appendProperties(monitor);
         // 添加 `interface` `dubbo` `timestamp` `pid` 到 `map` 集合中
         Map<String, String> map = new HashMap<String, String>();
@@ -268,6 +269,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         if (ConfigUtils.isNotEmpty(address)) {
             // 若不存在 `protocol` 参数，默认 "dubbo" 添加到 `map` 集合中。
             if (!map.containsKey(Constants.PROTOCOL_KEY)) {
+                //可以忽略，已经不存在
                 if (ExtensionLoader.getExtensionLoader(MonitorFactory.class).hasExtension("logstat")) {
                     map.put(Constants.PROTOCOL_KEY, "logstat");
                 } else {
@@ -276,8 +278,9 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
             }
             // 解析地址，创建 Dubbo URL 对象。
             return UrlUtils.parseURL(address, map);
-            // 从注册中心发现监控中心地址
+            // 从注册中心发现监控中心地址  protocol == registry
         } else if (Constants.REGISTRY_PROTOCOL.equals(monitor.getProtocol()) && registryURL != null) {
+            //protocol = dubbo, parameters.protol = registry, parameters.refer = map
             return registryURL.setProtocol("dubbo").addParameter(Constants.PROTOCOL_KEY, "registry").addParameterAndEncoded(Constants.REFER_KEY, StringUtils.toQueryString(map));
         }
         return null;

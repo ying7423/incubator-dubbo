@@ -29,6 +29,11 @@ public class UrlUtils {
 
     /**
      * 解析单个url，将defaults里面的参数合并到address中
+     *
+     * 合并的逻辑如下：
+     *
+     * 我们可以把 `address` 认为是 url ；`defaults` 认为是 defaultURL 。
+     * 若 url 有不存在的属性时，从 defaultURL 获得对应的属性，设置到 url 中。
      * @param address
      * @param defaults
      * @return
@@ -37,9 +42,14 @@ public class UrlUtils {
         if (address == null || address.length() == 0) {
             return null;
         }
+        // 以 Zookeeper 注册中心，配置集群的例子如下：
+        // 第一种，<dubbo:registry address="zookeeper://10.20.153.10:2181?backup=10.20.153.11:2181,10.20.153.12:2181"/>
+        // 第二种，<dubbo:registry protocol="zookeeper" address="10.20.153.10:2181,10.20.153.11:2181,10.20.153.12:2181"/>
         String url;
+        // 第一种
         if (address.indexOf("://") >= 0) {
             url = address;
+            // 第二种
         } else {
             String[] addresses = Constants.COMMA_SPLIT_PATTERN.split(address);
             url = addresses[0];
@@ -54,6 +64,8 @@ public class UrlUtils {
                 url += "?" + Constants.BACKUP_KEY + "=" + backup.toString();
             }
         }
+        // 从 `defaults` 中，获得 "protocol" "username" "password" "host" "port" "path" 到 `defaultXXX` 属性种。
+        // 因为，在 Dubbo URL 中，这几个是独立的属性，不在 `Dubbo.parameters` 属性中。
         String defaultProtocol = defaults == null ? null : defaults.get("protocol");
         if (defaultProtocol == null || defaultProtocol.length() == 0) {
             defaultProtocol = "dubbo";
@@ -71,7 +83,10 @@ public class UrlUtils {
             defaultParameters.remove("port");
             defaultParameters.remove("path");
         }
+        // 创建 Dubbo URL 。
         URL u = URL.valueOf(url);
+        // 若 `u` 的属性存在非空的情况下，从 `defaultXXX` 属性，赋值到 `u` 的属性中。
+        // 是否改变，即从 `defaultXXX` 属性，赋值到 `u` 的属性中。
         boolean changed = false;
         String protocol = u.getProtocol();
         String username = u.getUsername();
@@ -124,6 +139,7 @@ public class UrlUtils {
                 }
             }
         }
+        // 若改变，创建新的 Dubbo URL 。
         if (changed) {
             u = new URL(protocol, username, password, host, port, path, parameters);
         }
