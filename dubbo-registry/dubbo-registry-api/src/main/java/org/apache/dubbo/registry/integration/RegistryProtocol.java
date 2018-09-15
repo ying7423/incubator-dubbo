@@ -96,6 +96,7 @@ public class RegistryProtocol implements Protocol {
     }
 
     //Filter the parameters that do not need to be output in url(Starting with .)
+    //移除 .hide 为前缀的参数
     private static String[] getFilteredKeys(URL url) {
         Map<String, String> params = url.getParameters();
         if (params != null && !params.isEmpty()) {
@@ -243,7 +244,7 @@ public class RegistryProtocol implements Protocol {
     private URL getRegistedProviderUrl(final Invoker<?> originInvoker) {
         // 从注册中心的 export 参数中，获得服务提供者的 URL
         URL providerUrl = getProviderUrl(originInvoker);
-        //The address you see at the registry
+        //The address you see at the registry 移除多余的参数。因为，这些参数注册到注册中心没有实际的用途。
         final URL registedProviderUrl = providerUrl.removeParameters(getFilteredKeys(providerUrl))
                 .removeParameter(Constants.MONITOR_KEY)
                 .removeParameter(Constants.BIND_IP_KEY)
@@ -293,15 +294,18 @@ public class RegistryProtocol implements Protocol {
     @Override
     @SuppressWarnings("unchecked")
     public <T> Invoker<T> refer(Class<T> type, URL url) throws RpcException {
+        //获取真实的注册中心的URL
         url = url.setProtocol(url.getParameter(Constants.REGISTRY_KEY, Constants.DEFAULT_REGISTRY)).removeParameter(Constants.REGISTRY_KEY);
+        //获得注册中心
         Registry registry = registryFactory.getRegistry(url);
         if (RegistryService.class.equals(type)) {
             return proxyFactory.getInvoker((T) registry, type, url);
         }
-
+        //获得服务引用配置参数集合
         // group="a,b" or group="*"
         Map<String, String> qs = StringUtils.parseQueryString(url.getParameterAndDecoded(Constants.REFER_KEY));
         String group = qs.get(Constants.GROUP_KEY);
+        // 分组聚合，参见文档 https://dubbo.gitbooks.io/dubbo-user-book/demos/group-merger.html
         if (group != null && group.length() > 0) {
             if ((Constants.COMMA_SPLIT_PATTERN.split(group)).length > 1
                     || "*".equals(group)) {
@@ -316,23 +320,27 @@ public class RegistryProtocol implements Protocol {
     }
 
     private <T> Invoker<T> doRefer(Cluster cluster, Registry registry, Class<T> type, URL url) {
+        //创建RegistryDirectory对象，并设置注册中心
         RegistryDirectory<T> directory = new RegistryDirectory<T>(type, url);
         directory.setRegistry(registry);
         directory.setProtocol(protocol);
-        // all attributes of REFER_KEY
+        // all attributes of REFER_KEY 创建订阅URL
         Map<String, String> parameters = new HashMap<String, String>(directory.getUrl().getParameters());
         URL subscribeUrl = new URL(Constants.CONSUMER_PROTOCOL, parameters.remove(Constants.REGISTER_IP_KEY), 0, type.getName(), parameters);
+        //向注册中心注册自己(服务消费者)
         if (!Constants.ANY_VALUE.equals(url.getServiceInterface())
                 && url.getParameter(Constants.REGISTER_KEY, true)) {
             registry.register(subscribeUrl.addParameters(Constants.CATEGORY_KEY, Constants.CONSUMERS_CATEGORY,
                     Constants.CHECK_KEY, String.valueOf(false)));
         }
+        //向注册中心订阅服务提供者
         directory.subscribe(subscribeUrl.addParameter(Constants.CATEGORY_KEY,
                 Constants.PROVIDERS_CATEGORY
                         + "," + Constants.CONFIGURATORS_CATEGORY
                         + "," + Constants.ROUTERS_CATEGORY));
-
+        // 创建 Invoker 对象
         Invoker invoker = cluster.join(directory);
+        // 向本地注册表，注册消费者
         ProviderConsumerRegTable.registerConsumer(invoker, url, subscribeUrl, directory);
         return invoker;
     }

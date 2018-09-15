@@ -355,28 +355,38 @@ public class DubboProtocol extends AbstractProtocol {
 
     @Override
     public <T> Invoker<T> refer(Class<T> serviceType, URL url) throws RpcException {
+        //初始化序列化优化器
         optimizeSerialization(url);
         // create rpc invoker.
+        //getClients(url)：获得远程通信客户端数据组， 创建DubboInvoker对象
         DubboInvoker<T> invoker = new DubboInvoker<T>(serviceType, url, getClients(url), invokers);
+        //添加到invokers
         invokers.add(invoker);
         return invoker;
     }
 
+    /**
+     * 获得连接服务提供者的远程通信客户端数组
+     * @param url 服务提供者url
+     * @return 远程通信客户端
+     */
     private ExchangeClient[] getClients(URL url) {
-        // whether to share connection
+        // whether to share connection 是否共享连接
         boolean service_share_connect = false;
         int connections = url.getParameter(Constants.CONNECTIONS_KEY, 0);
-        // if not configured, connection is shared, otherwise, one connection for one service
+        // if not configured, connection is shared, otherwise, one connection for one service 未配置时，默认共享
         if (connections == 0) {
             service_share_connect = true;
             connections = 1;
         }
-
+        //创建连接服务提供者的 ExchangeClient 对象数组
         ExchangeClient[] clients = new ExchangeClient[connections];
         for (int i = 0; i < clients.length; i++) {
+            //共享 获取共享连接
             if (service_share_connect) {
                 clients[i] = getSharedClient(url);
             } else {
+                //不共享  初始化
                 clients[i] = initClient(url);
             }
         }
@@ -387,26 +397,34 @@ public class DubboProtocol extends AbstractProtocol {
      * Get shared connection
      */
     private ExchangeClient getSharedClient(URL url) {
+        //从集合中，查找ReferenceCountExchangeClient对象,带有指向数量计数的client封装
         String key = url.getAddress();
         ReferenceCountExchangeClient client = referenceClientMap.get(key);
         if (client != null) {
+            //若未关闭，增加指向该 Client 的数量，并返回它
             if (!client.isClosed()) {
                 client.incrementAndGetCount();
                 return client;
+                // 若已关闭，移除
             } else {
                 referenceClientMap.remove(key);
             }
         }
-
+        //todo
         locks.putIfAbsent(key, new Object());
+        //同步，创建ExchangeClient对象
         synchronized (locks.get(key)) {
             if (referenceClientMap.containsKey(key)) {
                 return referenceClientMap.get(key);
             }
-
+            // 创建 ExchangeClient 对象
             ExchangeClient exchangeClient = initClient(url);
+            // 将 `exchangeClient` 包装，创建 ReferenceCountExchangeClient 对象
+            //每次 ReferenceCountExchangeClient 彻底关闭( 指向归零 ) ，其内部的 client 会替换成重新创建的 LazyConnectExchangeClient 对象，此时叫这个对象为幽灵客户端，添加到 ghostClientMap 中
             client = new ReferenceCountExchangeClient(exchangeClient, ghostClientMap);
+            // 添加到集合
             referenceClientMap.put(key, client);
+            // 添加到 `ghostClientMap`
             ghostClientMap.remove(key);
             locks.remove(key);
             return client;
@@ -414,16 +432,13 @@ public class DubboProtocol extends AbstractProtocol {
     }
 
     /**
+     * 创建 ExchangeClient 对象，”连接”服务器
      * Create new connection
      */
     private ExchangeClient initClient(URL url) {
 
-        // client type setting.
+        // client type setting. 校验 Client 的 Dubbo SPI 拓展是否存在
         String str = url.getParameter(Constants.CLIENT_KEY, url.getParameter(Constants.SERVER_KEY, Constants.DEFAULT_REMOTING_CLIENT));
-
-        url = url.addParameter(Constants.CODEC_KEY, DubboCodec.NAME);
-        // enable heartbeat by default
-        url = url.addParameterIfAbsent(Constants.HEARTBEAT_KEY, String.valueOf(Constants.DEFAULT_HEARTBEAT));
 
         // BIO is not allowed since it has severe performance issue.
         if (str != null && str.length() > 0 && !ExtensionLoader.getExtensionLoader(Transporter.class).hasExtension(str)) {
@@ -431,12 +446,18 @@ public class DubboProtocol extends AbstractProtocol {
                     " supported client type is " + StringUtils.join(ExtensionLoader.getExtensionLoader(Transporter.class).getSupportedExtensions(), " "));
         }
 
+        // 设置编解码器为 Dubbo ，即 DubboCountCodec
+        url = url.addParameter(Constants.CODEC_KEY, DubboCodec.NAME);
+        // enable heartbeat by default 默认开启 heartbeat
+        url = url.addParameterIfAbsent(Constants.HEARTBEAT_KEY, String.valueOf(Constants.DEFAULT_HEARTBEAT));
+        //连接服务器，创建客户端
         ExchangeClient client;
         try {
-            // connection should be lazy
+            // connection should be lazy  懒连接，创建LazyConnectExchangeClient对象
             if (url.getParameter(Constants.LAZY_CONNECT_KEY, false)) {
                 client = new LazyConnectExchangeClient(url, requestHandler);
             } else {
+                //直接连接，创建HeaderExchangeClient对象
                 client = Exchangers.connect(url, requestHandler);
             }
         } catch (RemotingException e) {
