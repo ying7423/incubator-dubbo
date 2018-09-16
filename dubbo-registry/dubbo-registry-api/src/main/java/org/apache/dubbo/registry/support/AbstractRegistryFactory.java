@@ -39,11 +39,13 @@ public abstract class AbstractRegistryFactory implements RegistryFactory {
 
     // Log output
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractRegistryFactory.class);
-
+    /**
+     * 用于destroyAll 和 getRegistry(url)方法，对REGISTRIES访问的竞争
+     */
     // The lock for the acquisition process of the registry
     private static final ReentrantLock LOCK = new ReentrantLock();
 
-    // Registry Collection Map<RegistryAddress, Registry>
+    // Registry Collection Map<RegistryAddress, Registry> Registry集合
     private static final Map<String, Registry> REGISTRIES = new ConcurrentHashMap<String, Registry>();
 
     /**
@@ -82,9 +84,10 @@ public abstract class AbstractRegistryFactory implements RegistryFactory {
 
     @Override
     public Registry getRegistry(URL url) {
-        url = url.setPath(RegistryService.class.getName())
-                .addParameter(Constants.INTERFACE_KEY, RegistryService.class.getName())
-                .removeParameters(Constants.EXPORT_KEY, Constants.REFER_KEY);
+        url = url.setPath(RegistryService.class.getName()) // + `path`
+                .addParameter(Constants.INTERFACE_KEY, RegistryService.class.getName())  // + `parameters.interface`
+                .removeParameters(Constants.EXPORT_KEY, Constants.REFER_KEY);  //- `export`
+        //计算key
         String key = url.toServiceString();
         // Lock the registry access process to ensure a single instance of the registry
         LOCK.lock();
@@ -97,6 +100,7 @@ public abstract class AbstractRegistryFactory implements RegistryFactory {
             if (registry == null) {
                 throw new IllegalStateException("Can not create registry " + url);
             }
+            //添加到缓存
             REGISTRIES.put(key, registry);
             return registry;
         } finally {
@@ -105,6 +109,11 @@ public abstract class AbstractRegistryFactory implements RegistryFactory {
         }
     }
 
+    /**
+     * 创建Registry对象
+     * @param url 注册中心地址
+     * @return Registry对象
+     */
     protected abstract Registry createRegistry(URL url);
 
 }

@@ -50,6 +50,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
+ * 通用的注册，订阅，查询，通知等方法
+ * 持久化注册数据到文件，以properties格式存储。应用于重启时，无法从注册中心加载服务提供者列表等信息时，从文件中提取
  * AbstractRegistry. (SPI, Prototype, ThreadSafe)
  *
  */

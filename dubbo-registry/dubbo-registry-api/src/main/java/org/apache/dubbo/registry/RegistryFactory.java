@@ -29,18 +29,21 @@ import org.apache.dubbo.common.extension.SPI;
 public interface RegistryFactory {
 
     /**
+     * dubbo spi 会自动实现RegistryFactory$Adaptive类，根据url.protocol获得对应的RegistryFactory实现类，例如url.protocol = zookeeper时，获得zookeeperRegistryFactory实现类
+     *
+     * 连接注册中心
      * Connect to the registry
      * <p>
-     * Connecting the registry needs to support the contract: <br>
-     * 1. When the check=false is set, the connection is not checked, otherwise the exception is thrown when disconnection <br>
-     * 2. Support username:password authority authentication on URL.<br>
-     * 3. Support the backup=10.20.153.10 candidate registry cluster address.<br>
-     * 4. Support file=registry.cache local disk file cache.<br>
-     * 5. Support the timeout=1000 request timeout setting.<br>
-     * 6. Support session=60000 session timeout or expiration settings.<br>
+     * Connecting the registry needs to support the contract: <br>  连接注册中心需要处理契约
+     * 1. When the check=false is set, the connection is not checked, otherwise the exception is thrown when disconnection <br> 当设置check = false时，表示不检查连接，否则连接不上时，会报异常
+     * 2. Support username:password authority authentication on URL.<br>  支持url上的username : password权限认证
+     * 3. Support the backup=10.20.153.10 candidate registry cluster address.<br> 支持backup = 10.20.153.10备选注册中心集群地址
+     * 4. Support file=registry.cache local disk file cache.<br> 支持file = registry.cache本地磁盘文件缓存
+     * 5. Support the timeout=1000 request timeout setting.<br>  支持timeout=1000请求超时设置
+     * 6. Support session=60000 session timeout or expiration settings.<br> 支持session = 600000会话超时或过期设置
      *
-     * @param url Registry address, is not allowed to be empty
-     * @return Registry reference, never return empty value
+     * @param url Registry address, is not allowed to be empty 注册中心地址，不允许为空
+     * @return Registry reference, never return empty value 注册中心引用，总不返回空
      */
     @Adaptive({"protocol"})
     Registry getRegistry(URL url);
