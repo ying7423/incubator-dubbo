@@ -31,9 +31,13 @@ import java.util.Map;
  * InjvmInvoker
  */
 class InjvmInvoker<T> extends AbstractInvoker<T> {
-
+    /**
+     * 服务键
+     */
     private final String key;
-
+    /**
+     * exporter集合
+     */
     private final Map<String, Exporter<?>> exporterMap;
 
     InjvmInvoker(Class<T> type, URL url, String key, Map<String, Exporter<?>> exporterMap) {

@@ -22,24 +22,69 @@ import java.util.List;
 
 public interface ZookeeperClient {
 
+    //--------数据相关方法-------
+
+    /**
+     * 创建节点
+     * @param path 节点路径
+     * @param ephemeral 是否临时节点
+     */
     void create(String path, boolean ephemeral);
 
+    /**
+     * 删除节点
+     * @param path
+     */
     void delete(String path);
 
     List<String> getChildren(String path);
 
+    //---------监听相关方法-------
+
+    /**
+     * 添加childListener
+     * @param path 节点路径
+     * @param listener 监听器
+     * @return
+     */
     List<String> addChildListener(String path, ChildListener listener);
 
+    /**
+     * 移除childListener
+     * @param path 节点路径
+     * @param listener
+     */
     void removeChildListener(String path, ChildListener listener);
 
+    /**
+     * 添加stateListener
+     * @param listener
+     */
     void addStateListener(StateListener listener);
 
+    /**
+     * 移除stateListener
+     * @param listener
+     */
     void removeStateListener(StateListener listener);
 
+    //------状态相关方法----------
+
+    /**
+     * 是否连接
+     * @return
+     */
     boolean isConnected();
 
+    /**
+     * 关闭
+     */
     void close();
 
+    /**
+     * 获得注册中心url
+     * @return
+     */
     URL getUrl();
 
 }

@@ -37,22 +37,27 @@ import java.util.Collections;
 import java.util.List;
 
 public class CuratorZookeeperClient extends AbstractZookeeperClient<CuratorWatcher> {
-
+    /**
+     * client对象
+     */
     private final CuratorFramework client;
 
     public CuratorZookeeperClient(URL url) {
         super(url);
         try {
+            //创建client对象
             CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder()
-                    .connectString(url.getBackupAddress())
-                    .retryPolicy(new RetryNTimes(1, 1000))
-                    .connectionTimeoutMs(5000);
+                    .connectString(url.getBackupAddress())  //连接地址
+                    .retryPolicy(new RetryNTimes(1, 1000))  //重试策略，1次间隔1000ms
+                    .connectionTimeoutMs(5000); //连接超时时间
             String authority = url.getAuthority();
             if (authority != null && authority.length() > 0) {
                 builder = builder.authorization("digest", authority.getBytes());
             }
             client = builder.build();
+            //添加连接监听器
             client.getConnectionStateListenable().addListener(new ConnectionStateListener() {
+                //连接状态发生变化时，调用stateChange(state)方法，进行stateListener的回调
                 @Override
                 public void stateChanged(CuratorFramework client, ConnectionState state) {
                     if (state == ConnectionState.LOST) {
@@ -64,11 +69,14 @@ public class CuratorZookeeperClient extends AbstractZookeeperClient<CuratorWatch
                     }
                 }
             });
+            //启动client
             client.start();
         } catch (Exception e) {
             throw new IllegalStateException(e.getMessage(), e);
         }
     }
+
+    //-------create相关方法-------
 
     @Override
     public void createPersistent(String path) {
@@ -88,6 +96,17 @@ public class CuratorZookeeperClient extends AbstractZookeeperClient<CuratorWatch
         } catch (Exception e) {
             throw new IllegalStateException(e.getMessage(), e);
         }
+    }
+
+    @Override
+    public boolean checkExists(String path) {
+        try {
+            if (client.checkExists().forPath(path) != null) {
+                return true;
+            }
+        } catch (Exception e) {
+        }
+        return false;
     }
 
     @Override
@@ -111,16 +130,7 @@ public class CuratorZookeeperClient extends AbstractZookeeperClient<CuratorWatch
         }
     }
 
-    @Override
-    public boolean checkExists(String path) {
-        try {
-            if (client.checkExists().forPath(path) != null) {
-                return true;
-            }
-        } catch (Exception e) {
-        }
-        return false;
-    }
+
     @Override
     public boolean isConnected() {
         return client.getZookeeperClient().isConnected();
@@ -130,6 +140,9 @@ public class CuratorZookeeperClient extends AbstractZookeeperClient<CuratorWatch
     public void doClose() {
         client.close();
     }
+
+
+    //-------childListener相关方法--------
 
     @Override
     public CuratorWatcher createTargetChildListener(String path, ChildListener listener) {

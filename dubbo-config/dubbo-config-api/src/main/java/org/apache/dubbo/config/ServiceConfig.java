@@ -529,6 +529,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                         // 获得监控中心 URL
                         URL monitorUrl = loadMonitor(registryURL);
                         if (monitorUrl != null) {
+                            //服务提供者的url中，包含了监控中心的配置
                             url = url.addParameterAndEncoded(Constants.MONITOR_KEY, monitorUrl.toFullString());
                         }
                         if (logger.isInfoEnabled()) {
@@ -540,7 +541,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                             registryURL = registryURL.addParameter(Constants.PROXY_KEY, proxy);
                         }
 
-                        // 使用 ProxyFactory 创建 Invoker 对象
+                        // 使用 ProxyFactory 创建 Invoker 对象，注册中心的url中也包含了服务提供者的配置
                         Invoker<?> invoker = proxyFactory.getInvoker(ref, (Class) interfaceClass, registryURL.addParameterAndEncoded(Constants.EXPORT_KEY, url.toFullString()));
                         // 创建 DelegateProviderMetaDataInvoker 对象,该对象在Invoker对象的基础上，增加了当前服务提供者 ServiceConfig 对象
                         DelegateProviderMetaDataInvoker wrapperInvoker = new DelegateProviderMetaDataInvoker(invoker, this);

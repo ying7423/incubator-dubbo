@@ -174,16 +174,33 @@ public class RegistryProtocol implements Protocol {
         return new DestroyableExporter<T>(exporter, originInvoker, overrideSubscribeUrl, registedProviderUrl);
     }
 
+    /**
+     * 暴露服务
+     *
+     * 此处的local指的是：本地启动服务，但是不包括向注册中心注册服务
+     * @param originInvoker
+     * @param <T>
+     * @return
+     */
     @SuppressWarnings("unchecked")
     private <T> ExporterChangeableWrapper<T> doLocalExport(final Invoker<T> originInvoker) {
+        //获得在bounds中的缓存key
         String key = getCacheKey(originInvoker);
+        //从bounds获得，是不是已经暴露过服务
         ExporterChangeableWrapper<T> exporter = (ExporterChangeableWrapper<T>) bounds.get(key);
+        //未暴露过服务
         if (exporter == null) {
             synchronized (bounds) {
                 exporter = (ExporterChangeableWrapper<T>) bounds.get(key);
+                //暴露服务
                 if (exporter == null) {
+                    //创建Invoker Delegate对象
+                    //实现了org.apache.dubbo.rpc.protocol.InvokerWrapper类，主要增加了getInvoker方法,获得真实的非InvokerDelegete的Invoker对象
                     final Invoker<?> invokerDelegete = new InvokerDelegete<T>(originInvoker, getProviderUrl(originInvoker));
+                    //暴露服务，创建Invoker对象  调用dubboProtocol#export方法，
+                    //绑定了exporter和originInvoker
                     exporter = new ExporterChangeableWrapper<T>((Exporter<T>) protocol.export(invokerDelegete), originInvoker);
+                    //添加到bounds
                     bounds.put(key, exporter);
                 }
             }
@@ -319,6 +336,15 @@ public class RegistryProtocol implements Protocol {
         return ExtensionLoader.getExtensionLoader(Cluster.class).getExtension("mergeable");
     }
 
+    /**
+     * 执行服务引用
+     * @param cluster cluster对象
+     * @param registry 注册中心对象
+     * @param type 服务接口类型
+     * @param url 注册中心url
+     * @param <T>
+     * @return
+     */
     private <T> Invoker<T> doRefer(Cluster cluster, Registry registry, Class<T> type, URL url) {
         //创建RegistryDirectory对象，并设置注册中心
         RegistryDirectory<T> directory = new RegistryDirectory<T>(type, url);
@@ -458,13 +484,20 @@ public class RegistryProtocol implements Protocol {
     }
 
     /**
+     * 实现exporter接口，exporter可变的包装器
+     * 建立返回的exporter与protocol export出的exporter的对应关系
      * exporter proxy, establish the corresponding relationship between the returned exporter and the exporter exported by the protocol, and can modify the relationship at the time of override.
      *
      * @param <T>
      */
     private class ExporterChangeableWrapper<T> implements Exporter<T> {
-
+        /**
+         * 原invoker对象
+         */
         private final Invoker<T> originInvoker;
+        /**
+         * 暴露的exporter对象
+         */
         private Exporter<T> exporter;
 
         public ExporterChangeableWrapper(Exporter<T> exporter, Invoker<T> originInvoker) {
@@ -488,16 +521,28 @@ public class RegistryProtocol implements Protocol {
         @Override
         public void unexport() {
             String key = getCacheKey(this.originInvoker);
+            //移除出bounds
             bounds.remove(key);
+            //取消暴露
             exporter.unexport();
         }
     }
 
+    /**
+     * 实现exporter接口，可销毁的exporter实现类
+     * @param <T>
+     */
     static private class DestroyableExporter<T> implements Exporter<T> {
 
         public static final ExecutorService executor = Executors.newSingleThreadExecutor(new NamedThreadFactory("Exporter-Unexport", true));
 
+        /**
+         * 暴露的exporter对象
+         */
         private Exporter<T> exporter;
+        /**
+         * 原invoker对象
+         */
         private Invoker<T> originInvoker;
         private URL subscribeUrl;
         private URL registerUrl;

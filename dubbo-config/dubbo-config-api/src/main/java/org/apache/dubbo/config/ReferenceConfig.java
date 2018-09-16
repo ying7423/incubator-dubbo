@@ -64,11 +64,16 @@ import static org.apache.dubbo.common.utils.NetUtils.isInvalidLocalHost;
 public class ReferenceConfig<T> extends AbstractReferenceConfig {
 
     private static final long serialVersionUID = -5864351140409987595L;
-
+    /**
+     * 自适应protocol实现对象
+     */
     private static final Protocol refprotocol = ExtensionLoader.getExtensionLoader(Protocol.class).getAdaptiveExtension();
 
     private static final Cluster cluster = ExtensionLoader.getExtensionLoader(Cluster.class).getAdaptiveExtension();
 
+    /**
+     * 自适应proxyFactory对象
+     */
     private static final ProxyFactory proxyFactory = ExtensionLoader.getExtensionLoader(ProxyFactory.class).getAdaptiveExtension();
 
     /**
@@ -379,17 +384,20 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
 
     /**
      * 创建service对象
-     * @param map 集合
+     * @param map 集合 包含服务引用配置对象的配置项
      * @return 代理对象
      */
     @SuppressWarnings({"unchecked", "rawtypes", "deprecation"})
     private T createProxy(Map<String, String> map) {
+        //仅用于判断是否本地引用
         URL tmpUrl = new URL("temp", "localhost", 0, map);
         //是否本地调用
         final boolean isJvmRefer;
         if (isInjvm() == null) {
+            //直连服务提供者
             if (url != null && url.length() > 0) { // if a url is specified, don't do local reference
                 isJvmRefer = false;
+                //通过tmpUrl判断，是否需要本地引用
             } else if (InjvmProtocol.getInjvmProtocol().isInjvmRefer(tmpUrl)) {
                 // by default, reference local service if there is
                 isJvmRefer = true;
@@ -397,15 +405,18 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
                 isJvmRefer = false;
             }
         } else {
+            //通过injvm属性判断
             isJvmRefer = isInjvm().booleanValue();
         }
         //本地调用
         if (isJvmRefer) {
             URL url = new URL(Constants.LOCAL_PROTOCOL, NetUtils.LOCALHOST, 0, interfaceClass.getName()).addParameters(map);
+            //引用服务，返回invoker对象
             invoker = refprotocol.refer(interfaceClass, url);
             if (logger.isInfoEnabled()) {
                 logger.info("Using injvm service " + interfaceClass.getName());
             }
+            //远程服务引用
         } else {
             //定义直连地址，可以使服务提供者的地址，也可以是注册中心的地址
             if (url != null && url.length() > 0) { // user specified URL, could be peer-to-peer address, or register center's address.
@@ -420,7 +431,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
                         if (url.getPath() == null || url.getPath().length() == 0) {
                             url = url.setPath(interfaceName);
                         }
-                        //注册中心的地址，带上服务引用的配置参数
+                        //注册中心的地址，带上服务引用的配置参数  protocol = `registry`
                         if (Constants.REGISTRY_PROTOCOL.equals(url.getProtocol())) {
                             urls.add(url.addParameterAndEncoded(Constants.REFER_KEY, StringUtils.toQueryString(map)));
                         } else {
@@ -482,6 +493,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
         if (c == null && consumer != null) {
             c = consumer.isCheck();
         }
+        //默认为true
         if (c == null) {
             c = true; // default true
         }

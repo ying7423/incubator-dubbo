@@ -17,13 +17,23 @@
 package org.apache.dubbo.remoting.zookeeper;
 
 public interface StateListener {
-
+    /**
+     * 已断开
+     */
     int DISCONNECTED = 0;
-
+    /**
+     * 已连接
+     */
     int CONNECTED = 1;
-
+    /**
+     * 重连
+     */
     int RECONNECTED = 2;
 
+    /**
+     * 状态变更回调
+     * @param connected
+     */
     void stateChanged(int connected);
 
 }

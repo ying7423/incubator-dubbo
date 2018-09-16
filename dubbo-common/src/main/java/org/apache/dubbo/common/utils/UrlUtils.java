@@ -442,6 +442,7 @@ public class UrlUtils {
     }
 
     public static boolean isServiceKeyMatch(URL pattern, URL value) {
+        //`interface`, `group`, `version`
         return pattern.getParameter(Constants.INTERFACE_KEY).equals(
                 value.getParameter(Constants.INTERFACE_KEY))
                 && isItemMatch(pattern.getParameter(Constants.GROUP_KEY),
