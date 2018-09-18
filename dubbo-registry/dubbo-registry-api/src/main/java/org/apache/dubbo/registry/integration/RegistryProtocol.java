@@ -54,6 +54,7 @@ import static org.apache.dubbo.common.Constants.QOS_PORT;
 import static org.apache.dubbo.common.Constants.VALIDATION_KEY;
 
 /**
+ * 对 dubbo-rpc-api 的依赖集成
  * RegistryProtocol
  *
  */

@@ -24,6 +24,7 @@ import org.apache.dubbo.rpc.Result;
 import org.apache.dubbo.rpc.RpcException;
 
 /**
+ * 实现 Invoker 接口，服务消费者 Invoker Wrapper
  * @date 2017/11/23
  */
 public class ConsumerInvokerWrapper<T> implements Invoker {
@@ -31,6 +32,10 @@ public class ConsumerInvokerWrapper<T> implements Invoker {
     private URL originUrl;
     private URL registryUrl;
     private URL consumerUrl;
+    /**
+     * 注册中心 Directory
+     * 可以在使用列出消费者和提供者命令后，输出可消费者可调用的服务提供者数量
+     */
     private RegistryDirectory registryDirectory;
 
     public ConsumerInvokerWrapper(Invoker<T> invoker, URL registryUrl, URL consumerUrl, RegistryDirectory registryDirectory) {

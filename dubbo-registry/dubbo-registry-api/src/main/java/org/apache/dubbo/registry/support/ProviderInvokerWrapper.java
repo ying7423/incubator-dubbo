@@ -23,6 +23,7 @@ import org.apache.dubbo.rpc.Result;
 import org.apache.dubbo.rpc.RpcException;
 
 /**
+ * 实现 Invoker 接口，服务提供者 Invoker Wrapper
  * @date 2017/11/23
  */
 public class ProviderInvokerWrapper<T> implements Invoker {
@@ -30,6 +31,9 @@ public class ProviderInvokerWrapper<T> implements Invoker {
     private URL originUrl;
     private URL registryUrl;
     private URL providerUrl;
+    /**
+     * isReg 状态属性，可以在使用下线服务命令后，标记为 false
+     */
     private volatile boolean isReg;
 
     public ProviderInvokerWrapper(Invoker<T> invoker,URL registryUrl,URL providerUrl) {

@@ -54,6 +54,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
+ * 对 dubbo-cluster 的依赖集成
  * RegistryDirectory
  *
  */

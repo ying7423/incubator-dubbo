@@ -33,7 +33,9 @@ public interface RegistryService {
      * <p> 注册数据
      * Registering is required to support the contract:<br>
      * 1. When the URL sets the check=false parameter. When the registration fails, the exception is not thrown and retried in the background. Otherwise, the exception will be thrown.<br>
+     *    当url设置check = false时，注册失败会抛出异常，然后重试，否则，不抛出异常
      * 2. When URL sets the dynamic=false parameter, it needs to be stored persistently, otherwise, it should be deleted automatically when the registrant has an abnormal exit.<br>
+     *     当url设置dynamic=false时，需要永久性存储，否则会自动删除
      * 3. When the URL sets category=routers, it means classified storage, the default category is providers, and the data can be notified by the classified section. <br>
      * 4. When the registry is restarted, network jitter, data can not be lost, including automatically deleting data from the broken line.<br>
      * 5. Allow URLs which have the same URL but different parameters to coexist,they can't cover each other.<br>
@@ -56,6 +58,13 @@ public interface RegistryService {
     /**
      * Subscribe to eligible registered data and automatically push when the registered data is changed.
      * <p>订阅符合条件的已注册数据，当有注册数据变更时，自动变更
+     *
+     * 在 URL.parameters.category 属性上，表示订阅的数据分类。目前有四种类型：
+     * consumers ，服务消费者列表。
+     * providers ，服务提供者列表。
+     * routers ，路由规则列表。
+     * configurations ，配置规则列表。
+     *
      * Subscribing need to support contracts:<br>
      * 1. When the URL sets the check=false parameter. When the registration fails, the exception is not thrown and retried in the background. <br>
      * 2. When URL sets category=routers, it only notifies the specified classification data. Multiple classifications are separated by commas, and allows asterisk to match, which indicates that all categorical data are subscribed.<br>
