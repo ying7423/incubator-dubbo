@@ -185,6 +185,10 @@ public class ApplicationConfig extends AbstractConfig {
         return compiler;
     }
 
+    /**
+     * <dubbo:application compiler="" /> 配置下，可触发该方法
+     * @param compiler
+     */
     public void setCompiler(String compiler) {
         this.compiler = compiler;
         AdaptiveCompiler.setDefaultCompiler(compiler);

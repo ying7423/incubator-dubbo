@@ -27,10 +27,10 @@ public interface Compiler {
 
     /**
      * Compile java source code.
-     *
-     * @param code        Java source code
-     * @param classLoader classloader
-     * @return Compiled class
+     * 编译java代码字符串
+     * @param code        Java source code java字符串
+     * @param classLoader classloader 类加载器
+     * @return Compiled class 编译后的类
      */
     Class<?> compile(String code, ClassLoader classLoader);
 
