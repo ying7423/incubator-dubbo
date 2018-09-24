@@ -67,7 +67,7 @@ public class JavassistCompiler extends AbstractCompiler {
         // 获得类名
         int i = name.lastIndexOf('.');
         String className = i < 0 ? name : name.substring(i + 1);
-        // 创建 ClassPool 对象
+        // 创建 ClassPool 对象，没有使用默认的classPool对象
         ClassPool pool = new ClassPool(true);
         // 设置类搜索路径
         pool.appendClassPath(new LoaderClassPath(ClassHelper.getCallerClassLoader(getClass())));
@@ -81,6 +81,7 @@ public class JavassistCompiler extends AbstractCompiler {
             String pkg = matcher.group(1);
             // 引用整个包下的类/接口
             if (pkg.endsWith(".*")) {
+                //引用的报名
                 String pkgName = pkg.substring(0, pkg.length() - 2);
                 pool.importPackage(pkgName);
                 importPackages.add(pkgName);
@@ -91,18 +92,19 @@ public class JavassistCompiler extends AbstractCompiler {
                     String pkgName = pkg.substring(0, pi);
                     pool.importPackage(pkgName);
                     importPackages.add(pkgName);
+                    //引用的类名
                     fullNames.put(pkg.substring(pi + 1), pkg);
                 }
             }
         }
         String[] packages = importPackages.toArray(new String[0]);
-        // 匹配 extends
+        // 匹配 extends， 单继承
         matcher = EXTENDS_PATTERN.matcher(source);
         CtClass cls;
         if (matcher.find()) {
             String extend = matcher.group(1).trim();
             String extendClass;
-            // 内嵌的类，例如：extends A.B
+            // 内嵌的类，例如：extends A.B，extend class包含了package
             if (extend.contains(".")) {
                 extendClass = extend;
                 // 指定引用的类
@@ -117,7 +119,7 @@ public class JavassistCompiler extends AbstractCompiler {
         } else {
             cls = pool.makeClass(name);
         }
-        //匹配implements
+        //匹配implements，多实现
         matcher = IMPLEMENTS_PATTERN.matcher(source);
         if (matcher.find()) {
             //逗号分隔继承类
@@ -125,6 +127,7 @@ public class JavassistCompiler extends AbstractCompiler {
             for (String iface : ifaces) {
                 iface = iface.trim();
                 String ifaceClass;
+                //同extends
                 if (iface.contains(".")) {
                     ifaceClass = iface;
                 } else if (fullNames.containsKey(iface)) {
@@ -135,11 +138,14 @@ public class JavassistCompiler extends AbstractCompiler {
                 cls.addInterface(pool.get(ifaceClass));
             }
         }
+        // 获得类中的内容，即首末 {} 的内容。
         String body = source.substring(source.indexOf("{") + 1, source.length() - 1);
+        // 匹配 method 。使用分隔的方式，实际上，分隔出来的不仅仅有方法。
         String[] methods = METHODS_PATTERN.split(body);
         for (String method : methods) {
             method = method.trim();
             if (method.length() > 0) {
+                //构造方法
                 if (method.startsWith(className)) {
                     cls.addConstructor(CtNewConstructor.make("public " + method, cls));
                 } else if (FIELD_PATTERN.matcher(method).matches()) {
@@ -149,6 +155,7 @@ public class JavassistCompiler extends AbstractCompiler {
                 }
             }
         }
+        // JavassistCompiler.class.getProtectionDomain() =》 设置保护域和 JavassistCompiler 一致，即 `#getClass()` 方法。深入见 《Java安全——安全管理器、访问控制器和类装载器》https://www.zybuluo.com/changedi/note/417132
         return cls.toClass(ClassHelper.getCallerClassLoader(getClass()), JavassistCompiler.class.getProtectionDomain());
     }
 

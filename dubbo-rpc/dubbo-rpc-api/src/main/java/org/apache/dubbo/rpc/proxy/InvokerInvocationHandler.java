@@ -29,6 +29,9 @@ import java.lang.reflect.Method;
  */
 public class InvokerInvocationHandler implements InvocationHandler {
 
+    /**
+     * invoker对象
+     */
     private final Invoker<?> invoker;
 
     public InvokerInvocationHandler(Invoker<?> handler) {
@@ -39,9 +42,11 @@ public class InvokerInvocationHandler implements InvocationHandler {
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
         String methodName = method.getName();
         Class<?>[] parameterTypes = method.getParameterTypes();
+        //wait等方法，直接反射调用， Object的方法
         if (method.getDeclaringClass() == Object.class) {
             return method.invoke(invoker, args);
         }
+        //基础方法，不实用rpc调用
         if ("toString".equals(methodName) && parameterTypes.length == 0) {
             return invoker.toString();
         }
@@ -52,7 +57,9 @@ public class InvokerInvocationHandler implements InvocationHandler {
             return invoker.equals(args[0]);
         }
 
+        //rpc调用
         RpcInvocation invocation;
+        //异步
         if (RpcUtils.isAsyncFuture(method)) {
             Class<?> clazz = method.getDeclaringClass();
             String syncMethodName = methodName.substring(0, methodName.length() - Constants.ASYNC_SUFFIX.length());
@@ -63,6 +70,7 @@ public class InvokerInvocationHandler implements InvocationHandler {
         } else {
             invocation = new RpcInvocation(method, args);
         }
+        //recreate回放调用结果
         return invoker.invoke(invocation).recreate();
     }
 

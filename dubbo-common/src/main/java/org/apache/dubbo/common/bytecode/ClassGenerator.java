@@ -128,6 +128,11 @@ public final class ClassGenerator {
         return this;
     }
 
+    /**
+     * code : private String name;
+     * @param code
+     * @return
+     */
     public ClassGenerator addField(String code) {
         if (mFields == null)
             mFields = new ArrayList<String>();
@@ -139,6 +144,17 @@ public final class ClassGenerator {
         return addField(name, mod, type, null);
     }
 
+    /**
+     * name: 字段名 name
+     * mod：修饰符
+     * type:字段类型
+     * def: 默认值
+     * @param name
+     * @param mod
+     * @param type
+     * @param def
+     * @return
+     */
     public ClassGenerator addField(String name, int mod, Class<?> type, String def) {
         StringBuilder sb = new StringBuilder();
         sb.append(modifier(mod)).append(' ').append(ReflectUtils.getName(type)).append(' ');
@@ -162,6 +178,21 @@ public final class ClassGenerator {
         return addMethod(name, mod, rt, pts, null, body);
     }
 
+    /**
+     * name：方法名
+     * mod：修饰符
+     * rt：返回值类型
+     * pts：参数类型
+     * ets：异常类型
+     * body：方法体
+     * @param name
+     * @param mod
+     * @param rt
+     * @param pts
+     * @param ets
+     * @param body
+     * @return
+     */
     public ClassGenerator addMethod(String name, int mod, Class<?> rt, Class<?>[] pts, Class<?>[] ets, String body) {
         StringBuilder sb = new StringBuilder();
         sb.append(modifier(mod)).append(' ').append(ReflectUtils.getName(rt)).append(' ').append(name);

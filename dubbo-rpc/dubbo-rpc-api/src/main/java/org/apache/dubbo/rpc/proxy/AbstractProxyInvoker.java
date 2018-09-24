@@ -26,14 +26,23 @@ import org.apache.dubbo.rpc.RpcResult;
 import java.lang.reflect.InvocationTargetException;
 
 /**
+ * 代理invoker对象的抽象类
  * InvokerWrapper
  */
 public abstract class AbstractProxyInvoker<T> implements Invoker<T> {
-
+    /**
+     * 代理对象，一般是service实现对象
+     */
     private final T proxy;
 
+    /**
+     * 接口类型，一般是service接口
+     */
     private final Class<T> type;
 
+    /**
+     * url对象，一般是暴露服务的url对象
+     */
     private final URL url;
 
     public AbstractProxyInvoker(T proxy, Class<T> type, URL url) {
@@ -81,6 +90,15 @@ public abstract class AbstractProxyInvoker<T> implements Invoker<T> {
         }
     }
 
+    /**
+     * 执行调用，返回调用结果
+     * @param proxy 代理对象
+     * @param methodName 方法名
+     * @param parameterTypes 方法参数类型数组
+     * @param arguments 方法参数数组
+     * @return
+     * @throws Throwable
+     */
     protected abstract Object doInvoke(T proxy, String methodName, Class<?>[] parameterTypes, Object[] arguments) throws Throwable;
 
     @Override
