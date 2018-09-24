@@ -28,8 +28,9 @@ import org.apache.dubbo.rpc.RpcException;
 import java.util.List;
 
 /**
+ *
  * 具有监听功能的invoker包装器
- * ListenerInvoker
+ * InvokerListener的触发
  */
 public class ListenerInvokerWrapper<T> implements Invoker<T> {
 
