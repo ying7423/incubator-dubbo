@@ -23,6 +23,10 @@ import org.apache.dubbo.rpc.Invoker;
 import org.apache.dubbo.rpc.Result;
 import org.apache.dubbo.rpc.RpcException;
 
+/**
+ * 带有服务提供者配置的serviceConfig的invoker对象
+ * @param <T>
+ */
 public class DelegateProviderMetaDataInvoker<T> implements Invoker {
     /**
      * invoker对象

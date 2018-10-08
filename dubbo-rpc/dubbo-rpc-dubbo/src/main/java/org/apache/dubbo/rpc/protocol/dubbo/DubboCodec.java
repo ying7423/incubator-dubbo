@@ -44,6 +44,7 @@ import java.io.InputStream;
 import static org.apache.dubbo.rpc.protocol.dubbo.CallbackServiceCodec.encodeInvocationArgument;
 
 /**
+ * dubbo編碼器實現類
  * Dubbo codec.
  */
 public class DubboCodec extends ExchangeCodec implements Codec2 {
@@ -101,6 +102,7 @@ public class DubboCodec extends ExchangeCodec implements Codec2 {
         if ((flag & FLAG_REQUEST) == 0) {
             // decode response.
             Response res = new Response(id);
+            //若是心跳事件，進行設置
             if ((flag & FLAG_EVENT) != 0) {
                 res.setEvent(Response.HEARTBEAT_EVENT);
             }
@@ -110,18 +112,23 @@ public class DubboCodec extends ExchangeCodec implements Codec2 {
             if (status == Response.OK) {
                 try {
                     Object data;
+                    //解析心跳事件
                     if (res.isHeartbeat()) {
                         data = decodeHeartbeatData(channel, deserialize(s, channel.getUrl(), is));
+                    //解析其他事件
                     } else if (res.isEvent()) {
                         data = decodeEventData(channel, deserialize(s, channel.getUrl(), is));
+                    //解析普通響應
                     } else {
                         DecodeableRpcResult result;
+                        //在通信框架(例如netty)的IO線程，解碼
                         if (channel.getUrl().getParameter(
                                 Constants.DECODE_IN_IO_THREAD_KEY,
                                 Constants.DEFAULT_DECODE_IN_IO_THREAD)) {
                             result = new DecodeableRpcResult(channel, res, is,
                                     (Invocation) getRequestData(id), proto);
                             result.decode();
+                        //在dubbo的ThreadPool線程，解碼，使用DecodeHandler,在 DecodeHandler 中，才最终调用 DecodeableRpcResult#decode() 方法
                         } else {
                             result = new DecodeableRpcResult(channel, res,
                                     new UnsafeByteArrayInputStream(readMessageData(is)),
@@ -129,6 +136,7 @@ public class DubboCodec extends ExchangeCodec implements Codec2 {
                         }
                         data = result;
                     }
+                    //設置結果
                     res.setResult(data);
                 } catch (Throwable t) {
                     if (log.isWarnEnabled()) {
@@ -138,6 +146,7 @@ public class DubboCodec extends ExchangeCodec implements Codec2 {
                     res.setErrorMessage(StringUtils.toString(t));
                 }
             } else {
+                //異常響應狀態
                 res.setErrorMessage(deserialize(s, channel.getUrl(), is).readUTF());
             }
             return res;
@@ -146,23 +155,30 @@ public class DubboCodec extends ExchangeCodec implements Codec2 {
             // decode request.
             Request req = new Request(id);
             req.setVersion(Version.getProtocolVersion());
+            //是否需要響應
             req.setTwoWay((flag & FLAG_TWOWAY) != 0);
+            //設置心跳事件
             if ((flag & FLAG_EVENT) != 0) {
                 req.setEvent(Request.HEARTBEAT_EVENT);
             }
             try {
                 Object data;
+                //解碼心跳事件
                 if (req.isHeartbeat()) {
                     data = decodeHeartbeatData(channel, deserialize(s, channel.getUrl(), is));
+                //解碼其他事件
                 } else if (req.isEvent()) {
                     data = decodeEventData(channel, deserialize(s, channel.getUrl(), is));
+                //解碼普通請求
                 } else {
                     DecodeableRpcInvocation inv;
+                    // 在通信框架（例如，Netty）的 IO 线程，解码
                     if (channel.getUrl().getParameter(
                             Constants.DECODE_IN_IO_THREAD_KEY,
                             Constants.DEFAULT_DECODE_IN_IO_THREAD)) {
                         inv = new DecodeableRpcInvocation(channel, req, is, proto);
                         inv.decode();
+                    // 在 Dubbo ThreadPool 线程，解码，使用 DecodeHandler
                     } else {
                         inv = new DecodeableRpcInvocation(channel, req,
                                 new UnsafeByteArrayInputStream(readMessageData(is)), proto);
@@ -221,6 +237,7 @@ public class DubboCodec extends ExchangeCodec implements Codec2 {
         Object[] args = inv.getArguments();
         if (args != null)
             for (int i = 0; i < args.length; i++) {
+                //调用 CallbackServiceCodec#encodeInvocationArgument(...) 方法，编码参数
                 out.writeObject(encodeInvocationArgument(channel, inv, i));
             }
         // 写入隐式传参集合

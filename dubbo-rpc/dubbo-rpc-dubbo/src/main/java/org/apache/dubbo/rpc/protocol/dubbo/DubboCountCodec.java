@@ -29,8 +29,14 @@ import org.apache.dubbo.rpc.RpcResult;
 
 import java.io.IOException;
 
+/**
+ * 支持多消息的編解碼器
+ */
 public final class DubboCountCodec implements Codec2 {
 
+    /**
+     * 編解碼器
+     */
     private DubboCodec codec = new DubboCodec();
 
     @Override
@@ -42,9 +48,10 @@ public final class DubboCountCodec implements Codec2 {
     public Object decode(Channel channel, ChannelBuffer buffer) throws IOException {
         // 记录当前读位置
         int save = buffer.readerIndex();
-        // 创建 MultiMessage 对象
+        // 创建 MultiMessage 对象,MultiMessageHandler 支持对它的处理分发
         MultiMessage result = MultiMessage.create();
         //1）多消息解析的支持。2）记录每条消息的长度，用于 MonitorFilter 监控
+        //循環解析消息
         do {
             // 解码
             Object obj = codec.decode(channel, buffer);
@@ -73,6 +80,11 @@ public final class DubboCountCodec implements Codec2 {
         return result;
     }
 
+    /**
+     * 記錄消息長度到隱式參數集合，用於monitorFilter監控
+     * @param result
+     * @param bytes
+     */
     private void logMessageLength(Object result, int bytes) {
         if (bytes <= 0) {
             return;

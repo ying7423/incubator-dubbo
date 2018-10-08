@@ -39,6 +39,7 @@ import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
+ * 消费者调用服务
  * DubboInvoker
  */
 public class DubboInvoker<T> extends AbstractInvoker<T> {
@@ -47,7 +48,9 @@ public class DubboInvoker<T> extends AbstractInvoker<T> {
      * 通信客户端数组
      */
     private final ExchangeClient[] clients;
-
+    /**
+     * 使用的 {@link #clients} 的位置
+     */
     private final AtomicPositiveInteger index = new AtomicPositiveInteger();
     /**
      * 版本
@@ -76,31 +79,46 @@ public class DubboInvoker<T> extends AbstractInvoker<T> {
         this.invokers = invokers;
     }
 
+    /**
+     * 调用服务
+     * @param invocation
+     * @return
+     * @throws Throwable
+     */
     @Override
     protected Result doInvoke(final Invocation invocation) throws Throwable {
         RpcInvocation inv = (RpcInvocation) invocation;
+        //获得方法名
         final String methodName = RpcUtils.getMethodName(invocation);
+        // 获得 `path`( 服务名 )，`version`
         inv.setAttachment(Constants.PATH_KEY, getUrl().getPath());
         inv.setAttachment(Constants.VERSION_KEY, version);
-
+        // 获得 ExchangeClient 对象
         ExchangeClient currentClient;
         if (clients.length == 1) {
             currentClient = clients[0];
         } else {
             currentClient = clients[index.getAndIncrement() % clients.length];
         }
+        // 远程调用
         try {
+            // 获得是否异步调用
             boolean isAsync = RpcUtils.isAsync(getUrl(), invocation);
+            // 获得是否单向调用
             boolean isOneway = RpcUtils.isOneway(getUrl(), invocation);
+            // 获得超时时间
             int timeout = getUrl().getMethodParameter(methodName, Constants.TIMEOUT_KEY, Constants.DEFAULT_TIMEOUT);
+            // 单向调用,空返回
             if (isOneway) {
                 boolean isSent = getUrl().getMethodParameter(methodName, Constants.SENT_KEY, false);
                 currentClient.send(inv, isSent);
                 RpcContext.getContext().setFuture(null);
                 return new RpcResult();
+            // 异步调用
             } else if (isAsync) {
                 ResponseFuture future = currentClient.request(inv, timeout);
                 FutureAdapter<T> futureAdapter = new FutureAdapter<>(future);
+                //在FutureFilter中异步回调
                 RpcContext.getContext().setFuture(futureAdapter);
                 Result result;
                 if (RpcUtils.isAsyncFuture(getUrl(), inv)) {
@@ -109,8 +127,10 @@ public class DubboInvoker<T> extends AbstractInvoker<T> {
                     result = new RpcResult();
                 }
                 return result;
+            // 同步调用
             } else {
                 RpcContext.getContext().setFuture(null);
+                //阻塞等待
                 return (Result) currentClient.request(inv, timeout).get();
             }
         } catch (TimeoutException e) {
