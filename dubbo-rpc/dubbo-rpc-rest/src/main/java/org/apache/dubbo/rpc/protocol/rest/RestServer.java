@@ -20,14 +20,31 @@ import org.apache.dubbo.common.URL;
 
 public interface RestServer {
 
+    /**
+     * 启动服务器
+     *
+     * @param url URL 对象
+     */
     void start(URL url);
 
     /**
-     * @param resourceDef it could be either resource interface or resource impl
+     * 部署服务
+     *
+     * @param resourceDef 服务类 it could be either resource interface or resource impl
+     * @param resourceInstance 服务对象
+     * @param contextPath ContextPath
+     *
      */
     void deploy(Class resourceDef, Object resourceInstance, String contextPath);
 
+    /**
+     * 取消服务
+     * @param resourceDef
+     */
     void undeploy(Class resourceDef);
 
+    /**
+     * 停止服务器
+     */
     void stop();
 }

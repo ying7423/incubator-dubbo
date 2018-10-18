@@ -47,6 +47,7 @@ import java.util.Map;
  * This logging filter is not highly optimized for now
  *
  */
+//排在最前面
 @Priority(Integer.MIN_VALUE)
 public class LoggingFilter implements ContainerRequestFilter, ClientRequestFilter, ContainerResponseFilter, ClientResponseFilter, WriterInterceptor, ReaderInterceptor {
 
