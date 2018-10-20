@@ -26,6 +26,7 @@ import org.apache.dubbo.rpc.RpcException;
 import org.apache.dubbo.rpc.RpcResult;
 
 /**
+ * 使用 Dubbo SPI Adaptive 机制，自动加载，仅限服务提供者
  * EchoInvokerFilter
  */
 @Activate(group = Constants.PROVIDER, order = -110000)
@@ -33,8 +34,11 @@ public class EchoFilter implements Filter {
 
     @Override
     public Result invoke(Invoker<?> invoker, Invocation inv) throws RpcException {
+        // 方法名为 `$echo` ，参数只有一个
         if (inv.getMethodName().equals(Constants.$ECHO) && inv.getArguments() != null && inv.getArguments().length == 1)
+            // 直接返回方法参数
             return new RpcResult(inv.getArguments()[0]);
+        //若果调用方法非回声调用时，调用 Invoker#invoke(invocation) 方法，继续走后面的过滤链。
         return invoker.invoke(inv);
     }
 
