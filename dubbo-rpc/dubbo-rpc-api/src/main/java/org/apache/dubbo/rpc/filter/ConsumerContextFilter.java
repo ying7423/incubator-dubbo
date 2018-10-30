@@ -29,6 +29,7 @@ import org.apache.dubbo.rpc.RpcInvocation;
 import org.apache.dubbo.rpc.RpcResult;
 
 /**
+ * 实现 Filter 接口，服务消费者的 ContextFilter 实现类
  * ConsumerContextInvokerFilter
  */
 @Activate(group = Constants.CONSUMER, order = -10000)
@@ -36,20 +37,24 @@ public class ConsumerContextFilter implements Filter {
 
     @Override
     public Result invoke(Invoker<?> invoker, Invocation invocation) throws RpcException {
+        // 设置RpcContext对象
         RpcContext.getContext()
                 .setInvoker(invoker)
                 .setInvocation(invocation)
                 .setLocalAddress(NetUtils.getLocalHost(), 0)
                 .setRemoteAddress(invoker.getUrl().getHost(),
                         invoker.getUrl().getPort());
+        // 设置 RpcInvocation 对象的 `invoker` 属性
         if (invocation instanceof RpcInvocation) {
             ((RpcInvocation) invocation).setInvoker(invoker);
         }
         try {
+            // 服务调用
             RpcResult result = (RpcResult) invoker.invoke(invocation);
             RpcContext.getServerContext().setAttachments(result.getAttachments());
             return result;
         } finally {
+            // 清理隐式参数集合
             RpcContext.getContext().clearAttachments();
         }
     }

@@ -25,6 +25,7 @@ import org.apache.dubbo.rpc.Result;
 import org.apache.dubbo.rpc.RpcException;
 
 /**
+ * 在设计目的中，切换到加载了接口定义的类加载器，以便实现与相同的类加载器上下文一起工作
  * ClassLoaderInvokerFilter
  */
 @Activate(group = Constants.PROVIDER, order = -30000)
@@ -32,9 +33,13 @@ public class ClassLoaderFilter implements Filter {
 
     @Override
     public Result invoke(Invoker<?> invoker, Invocation invocation) throws RpcException {
+        // 获取原来的classloader
         ClassLoader ocl = Thread.currentThread().getContextClassLoader();
+        // 切换当前线程的类加载器为服务接口的类加载器
         Thread.currentThread().setContextClassLoader(invoker.getInterface().getClassLoader());
+        // 服务调用
         try {
+            // 切换当前线程的类加载器为原来的类加载器
             return invoker.invoke(invocation);
         } finally {
             Thread.currentThread().setContextClassLoader(ocl);

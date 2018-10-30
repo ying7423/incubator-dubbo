@@ -63,21 +63,40 @@ import java.util.concurrent.TimeUnit;
 public class AccessLogFilter implements Filter {
 
     private static final Logger logger = LoggerFactory.getLogger(AccessLogFilter.class);
-
+    /**
+     * 访问日志在 {@link LoggerFactory} 中的日志名
+     */
     private static final String ACCESS_LOG_KEY = "dubbo.accesslog";
-
+    /**
+     * 访问日志的文件后缀
+     */
     private static final String FILE_DATE_FORMAT = "yyyyMMdd";
-
+    /**
+     * 日历的时间格式化
+     */
     private static final String MESSAGE_DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
-
+    /**
+     * 队列大小，即 {@link #logQueue} 值的大小
+     */
     private static final int LOG_MAX_BUFFER = 5000;
-
+    /**
+     * 日志输出频率，单位：毫秒。仅适用于 {@link #logFuture}
+     */
     private static final long LOG_OUTPUT_INTERVAL = 5000;
-
+    /**
+     * 日志队列
+     *
+     * key：访问日志名
+     * value：日志集合
+     */
     private final ConcurrentMap<String, Set<String>> logQueue = new ConcurrentHashMap<String, Set<String>>();
-
+    /**
+     * 定时任务线程池
+     */
     private final ScheduledExecutorService logScheduled = Executors.newScheduledThreadPool(2, new NamedThreadFactory("Dubbo-Access-Log", true));
-
+    /**
+     * 记录日志任务
+     */
     private volatile ScheduledFuture<?> logFuture = null;
 
     private void init() {
@@ -105,6 +124,7 @@ public class AccessLogFilter implements Filter {
     @Override
     public Result invoke(Invoker<?> invoker, Invocation inv) throws RpcException {
         try {
+            // 记录访问日志的文件名
             String accesslog = invoker.getUrl().getParameter(Constants.ACCESS_LOG_KEY);
             if (ConfigUtils.isNotEmpty(accesslog)) {
                 RpcContext context = RpcContext.getContext();

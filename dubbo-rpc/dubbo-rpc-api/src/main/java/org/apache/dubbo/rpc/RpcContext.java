@@ -48,6 +48,7 @@ import java.util.concurrent.TimeoutException;
 public class RpcContext {
 
     /**
+     * RpcContext线程变量
      * use internal thread local to improve performance
      */
     private static final InternalThreadLocal<RpcContext> LOCAL = new InternalThreadLocal<RpcContext>() {
@@ -62,34 +63,74 @@ public class RpcContext {
             return new RpcContext();
         }
     };
-
+    //隐式参数集合
     private final Map<String, String> attachments = new HashMap<String, String>();
+    // 如果我们希望有多次 Dubbo 调用，共享参数，并且不被 ConsumerContextFilter 清理隐式参数，笔者觉得可以使用该 values 属性
     private final Map<String, Object> values = new HashMap<String, Object>();
+    // 异步调用future
     private Future<?> future;
-
+    /**
+     * 可调用服务的 URL 对象集合
+     * 集群容错
+     */
     private List<URL> urls;
-
+    /**
+     * 调用服务的 URL 对象
+     */
     private URL url;
-
+    /**
+     * 方法名
+     */
     private String methodName;
 
+    /**
+     * 参数类型数组
+     */
     private Class<?>[] parameterTypes;
 
+    /**
+     * 参数值数组
+     */
     private Object[] arguments;
 
+    /**
+     * 服务消费者地址
+     */
     private InetSocketAddress localAddress;
 
+    /**
+     * 服务提供者地址
+     */
     private InetSocketAddress remoteAddress;
+    /**
+     *  DUBBO-325 废弃的，使用 urls 属性替代
+     */
     @Deprecated
     private List<Invoker<?>> invokers;
+    /**
+     *  DUBBO-325 废弃的，使用 url 属性替代
+     */
     @Deprecated
     private Invoker<?> invoker;
+    /**
+     * DUBBO-325 废弃的，使用 methodName、parameterTypes、arguments 属性替代
+     */
     @Deprecated
     private Invocation invocation;
 
     // now we don't use the 'values' map to hold these objects
     // we want these objects to be as generic as possible
+    /**
+     * 请求
+     *
+     * 例如，在 RestProtocol
+     */
     private Object request;
+    /**
+     * 响应
+     *
+     * 例如，在 RestProtocol
+     */
     private Object response;
     private AsyncContext asyncContext;
 
