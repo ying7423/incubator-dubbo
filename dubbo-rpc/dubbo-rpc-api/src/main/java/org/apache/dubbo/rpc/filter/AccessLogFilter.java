@@ -127,24 +127,32 @@ public class AccessLogFilter implements Filter {
             // 记录访问日志的文件名
             String accesslog = invoker.getUrl().getParameter(Constants.ACCESS_LOG_KEY);
             if (ConfigUtils.isNotEmpty(accesslog)) {
+                // 服务的名字、版本、分组信息
                 RpcContext context = RpcContext.getContext();
                 String serviceName = invoker.getInterface().getName();
                 String version = invoker.getUrl().getParameter(Constants.VERSION_KEY);
                 String group = invoker.getUrl().getParameter(Constants.GROUP_KEY);
+                // 拼接日志内容
                 StringBuilder sn = new StringBuilder();
-                sn.append("[").append(new SimpleDateFormat(MESSAGE_DATE_FORMAT).format(new Date())).append("] ").append(context.getRemoteHost()).append(":").append(context.getRemotePort())
-                        .append(" -> ").append(context.getLocalHost()).append(":").append(context.getLocalPort())
+                sn.append("[").append(new SimpleDateFormat(MESSAGE_DATE_FORMAT).format(new Date())).append("] "). //时间
+                        append(context.getRemoteHost()).append(":").append(context.getRemotePort()) //调用方地址
+                        .append(" -> ").append(context.getLocalHost()).append(":").append(context.getLocalPort())  // 本地地址
                         .append(" - ");
+                //分组
                 if (null != group && group.length() > 0) {
                     sn.append(group).append("/");
                 }
+                // 服务名
                 sn.append(serviceName);
+                // 版本
                 if (null != version && version.length() > 0) {
                     sn.append(":").append(version);
                 }
                 sn.append(" ");
+                // 方法名
                 sn.append(inv.getMethodName());
                 sn.append("(");
+                // 参数类型
                 Class<?>[] types = inv.getParameterTypes();
                 if (types != null && types.length > 0) {
                     boolean first = true;
@@ -158,14 +166,17 @@ public class AccessLogFilter implements Filter {
                     }
                 }
                 sn.append(") ");
+                // 参数值
                 Object[] args = inv.getArguments();
                 if (args != null && args.length > 0) {
                     sn.append(JSON.toJSONString(args));
                 }
                 String msg = sn.toString();
+                // 【方式一】使用日志组件，例如 Log4j 等写
                 if (ConfigUtils.isDefault(accesslog)) {
                     LoggerFactory.getLogger(ACCESS_LOG_KEY + "." + invoker.getInterface().getName()).info(msg);
                 } else {
+                    // 【方式二】异步输出到指定文件
                     log(accesslog, msg);
                 }
             }
