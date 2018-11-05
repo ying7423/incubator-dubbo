@@ -27,6 +27,8 @@ import org.apache.dubbo.rpc.RpcException;
 import org.apache.dubbo.rpc.RpcStatus;
 
 /**
+ * 在服务消费者，通过 <dubbo:reference /> 的 "actives" 统一配置项开启
+ * 服务消费者，每服务的每方法最大并发调用数
  * LimitInvokerFilter
  */
 @Activate(group = Constants.CONSUMER, value = Constants.ACTIVES_KEY)

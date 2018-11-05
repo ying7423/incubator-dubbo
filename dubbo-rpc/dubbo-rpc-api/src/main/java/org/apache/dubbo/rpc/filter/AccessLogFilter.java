@@ -99,18 +99,30 @@ public class AccessLogFilter implements Filter {
      */
     private volatile ScheduledFuture<?> logFuture = null;
 
+    /**
+     * 初始化任务
+     */
     private void init() {
         if (logFuture == null) {
             synchronized (logScheduled) {
+                //双重锁，避免重复初始化
                 if (logFuture == null) {
+                    // 每5000ms执行一次
                     logFuture = logScheduled.scheduleWithFixedDelay(new LogTask(), LOG_OUTPUT_INTERVAL, LOG_OUTPUT_INTERVAL, TimeUnit.MILLISECONDS);
                 }
             }
         }
     }
 
+    /**
+     * 添加日志内容到日志队列
+     * @param accesslog 日志文件
+     * @param logmessage 日志内容
+     */
     private void log(String accesslog, String logmessage) {
+        //初始化
         init();
+        //获得队列，以文件名为key
         Set<String> logSet = logQueue.get(accesslog);
         if (logSet == null) {
             logQueue.putIfAbsent(accesslog, new ConcurrentHashSet<String>());
@@ -176,7 +188,7 @@ public class AccessLogFilter implements Filter {
                 if (ConfigUtils.isDefault(accesslog)) {
                     LoggerFactory.getLogger(ACCESS_LOG_KEY + "." + invoker.getInterface().getName()).info(msg);
                 } else {
-                    // 【方式二】异步输出到指定文件
+                    // 【方式二】异步输出到指定文件 添加日志内容到日志队列
                     log(accesslog, msg);
                 }
             }
@@ -186,6 +198,9 @@ public class AccessLogFilter implements Filter {
         return invoker.invoke(inv);
     }
 
+    /**
+     * 日志任务
+     */
     private class LogTask implements Runnable {
         @Override
         public void run() {
@@ -195,6 +210,7 @@ public class AccessLogFilter implements Filter {
                         try {
                             String accesslog = entry.getKey();
                             Set<String> logSet = entry.getValue();
+                            //获得日志文件
                             File file = new File(accesslog);
                             File dir = file.getParentFile();
                             if (null != dir && !dir.exists()) {
@@ -203,22 +219,28 @@ public class AccessLogFilter implements Filter {
                             if (logger.isDebugEnabled()) {
                                 logger.debug("Append log to " + accesslog);
                             }
+                            // 归档历史日志文件，例如： `accesslog` => `access.20181023` 注意，因为是按照文件最后修改时间，所以极端情况（写着写着到了第二天），那么就不会归档了。
                             if (file.exists()) {
                                 String now = new SimpleDateFormat(FILE_DATE_FORMAT).format(new Date());
+                                // 最后修改时间
                                 String last = new SimpleDateFormat(FILE_DATE_FORMAT).format(new Date(file.lastModified()));
                                 if (!now.equals(last)) {
                                     File archive = new File(file.getAbsolutePath() + "." + last);
                                     file.renameTo(archive);
                                 }
                             }
+                            // 输出日志到指定文件
                             FileWriter writer = new FileWriter(file, true);
                             try {
                                 for (Iterator<String> iterator = logSet.iterator();
                                      iterator.hasNext();
                                      iterator.remove()) {
+                                    // 写入一行日志
                                     writer.write(iterator.next());
+                                    // 换行
                                     writer.write("\r\n");
                                 }
+                                // 刷盘
                                 writer.flush();
                             } finally {
                                 writer.close();

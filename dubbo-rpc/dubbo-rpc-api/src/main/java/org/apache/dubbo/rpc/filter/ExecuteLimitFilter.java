@@ -29,6 +29,8 @@ import org.apache.dubbo.rpc.RpcStatus;
 import java.util.concurrent.Semaphore;
 
 /**
+ * 服务提供者，通过 <dubbo:service /> 的 "executes" 统一配置项开启
+ * 服务提供者，每服务的每方法最大可并行执行请求数。
  * ThreadLimitInvokerFilter
  */
 @Activate(group = Constants.PROVIDER, value = Constants.EXECUTES_KEY)
