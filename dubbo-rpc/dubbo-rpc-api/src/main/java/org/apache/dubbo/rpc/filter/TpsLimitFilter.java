@@ -28,6 +28,9 @@ import org.apache.dubbo.rpc.filter.tps.DefaultTPSLimiter;
 import org.apache.dubbo.rpc.filter.tps.TPSLimiter;
 
 /**
+ * 服务提供者中，提供 限流 的功能
+ * key="tps" value=""
+ * key="tps.interval" value=""
  * Limit TPS for either service or service's particular method
  */
 @Activate(group = Constants.PROVIDER, value = Constants.TPS_LIMIT_RATE_KEY)

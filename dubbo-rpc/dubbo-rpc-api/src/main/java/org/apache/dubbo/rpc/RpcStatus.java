@@ -180,26 +180,33 @@ public class RpcStatus {
     }
 
     /**
+     * 服务调用结束的次数
      * @param url
      * @param elapsed
      * @param succeeded
      */
     public static void endCount(URL url, String methodName, long elapsed, boolean succeeded) {
+        // `SERVICE_STATISTICS` 的计数
         endCount(getStatus(url), elapsed, succeeded);
+        // `METHOD_STATISTICS` 的计数
         endCount(getStatus(url, methodName), elapsed, succeeded);
     }
 
     private static void endCount(RpcStatus status, long elapsed, boolean succeeded) {
+        //次数计数
         status.active.decrementAndGet();
         status.total.incrementAndGet();
+        //时长计数
         status.totalElapsed.addAndGet(elapsed);
         if (status.maxElapsed.get() < elapsed) {
             status.maxElapsed.set(elapsed);
         }
+        //成功次数
         if (succeeded) {
             if (status.succeededMaxElapsed.get() < elapsed) {
                 status.succeededMaxElapsed.set(elapsed);
             }
+        //失败次数
         } else {
             status.failed.incrementAndGet();
             status.failedElapsed.addAndGet(elapsed);
@@ -371,6 +378,7 @@ public class RpcStatus {
     }
 
     /**
+     * 获得信号量executesPermits 属性
      * Get the semaphore for thread number. Semaphore's permits is decided by {@link Constants#EXECUTES_KEY}
      *
      * @param maxThreadNum value of {@link Constants#EXECUTES_KEY}
@@ -380,7 +388,7 @@ public class RpcStatus {
         if(maxThreadNum <= 0) {
             return null;
         }
-
+        // 若信号量不存在，或者信号量大小发生改变，创建新的信号量
         if (executesLimit == null || executesPermits != maxThreadNum) {
             synchronized (this) {
                 if (executesLimit == null || executesPermits != maxThreadNum) {

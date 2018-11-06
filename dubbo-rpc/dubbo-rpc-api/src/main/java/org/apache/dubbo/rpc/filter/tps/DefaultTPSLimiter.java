@@ -23,8 +23,14 @@ import org.apache.dubbo.rpc.Invocation;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+/**
+ * 实现 TPSLimiter 接口，默认 TPS 限制器实现类，以服务为维度
+ */
 public class DefaultTPSLimiter implements TPSLimiter {
 
+    /**
+     *  statItem集合， key:服务名
+     */
     private final ConcurrentMap<String, StatItem> stats
             = new ConcurrentHashMap<String, StatItem>();
 
