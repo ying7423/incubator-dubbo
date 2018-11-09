@@ -29,7 +29,11 @@ import java.util.concurrent.ConcurrentMap;
  * AbstractCacheFactory
  */
 public abstract class AbstractCacheFactory implements CacheFactory {
-
+    /**
+     * Cache 集合
+     *
+     * key：URL
+     */
     private final ConcurrentMap<String, Cache> caches = new ConcurrentHashMap<String, Cache>();
 
     @Override
