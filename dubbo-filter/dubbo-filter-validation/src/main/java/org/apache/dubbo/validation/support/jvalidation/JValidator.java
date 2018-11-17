@@ -106,15 +106,26 @@ public class JValidator implements Validator {
                 || Number.class.isAssignableFrom(cls) || Date.class.isAssignableFrom(cls);
     }
 
+    /**
+     * 使用方法参数，创建 Bean 对象。
+     * 因为该 Bean 对象，实际不存在对应类，使用 Javassist 动态编译生成。
+     * @param clazz 服务接口类
+     * @param method
+     * @param args 参数数组
+     * @return 对象
+     */
     private static Object getMethodParameterBean(Class<?> clazz, Method method, Object[] args) {
+        // 无 Constraint 注解的方法参数，无需创建 Bean 对象。
         if (!hasConstraintParameter(method)) {
             return null;
         }
         try {
+            // 获得 Bean 类名
             String parameterClassName = generateMethodParameterClassName(clazz, method);
             Class<?> parameterClass;
             try {
                 parameterClass = (Class<?>) Class.forName(parameterClassName, true, clazz.getClassLoader());
+            // 类不存在，使用 Javassist 动态编译生成
             } catch (ClassNotFoundException e) {
                 ClassPool pool = ClassGenerator.getClassPool(clazz.getClassLoader());
                 CtClass ctClass = pool.makeClass(parameterClassName);
@@ -183,9 +194,12 @@ public class JValidator implements Validator {
 
     private static boolean hasConstraintParameter(Method method) {
         Annotation[][] parameterAnnotations = method.getParameterAnnotations();
+        // 循环所有方法参数的注解
         if (parameterAnnotations != null && parameterAnnotations.length > 0) {
             for (Annotation[] annotations : parameterAnnotations) {
+                // 循环每个方法参数的注解数组
                 for (Annotation annotation : annotations) {
+                    // 是否有 Constraint 注解
                     if (annotation.annotationType().isAnnotationPresent(Constraint.class)) {
                         return true;
                     }
