@@ -30,6 +30,7 @@ import java.net.InetSocketAddress;
  */
 public interface Endpoint {
 
+    // 属性相关
     /**
      * get url.
      *
@@ -51,6 +52,7 @@ public interface Endpoint {
      */
     InetSocketAddress getLocalAddress();
 
+    // 发送消息
     /**
      * send message.
      *
@@ -67,6 +69,7 @@ public interface Endpoint {
      */
     void send(Object message, boolean sent) throws RemotingException;
 
+    // 关系相关
     /**
      * close the channel.
      */

@@ -127,27 +127,37 @@ public class JValidator implements Validator {
                 parameterClass = (Class<?>) Class.forName(parameterClassName, true, clazz.getClassLoader());
             // 类不存在，使用 Javassist 动态编译生成
             } catch (ClassNotFoundException e) {
+                // 创建 ClassPool 对象
                 ClassPool pool = ClassGenerator.getClassPool(clazz.getClassLoader());
+                // 创建 CtClass 对象
                 CtClass ctClass = pool.makeClass(parameterClassName);
+                // 设置 Java 版本为 5
                 ClassFile classFile = ctClass.getClassFile();
                 classFile.setVersionToJava5();
+                // 添加默认构造方法
                 ctClass.addConstructor(CtNewConstructor.defaultConstructor(pool.getCtClass(parameterClassName)));
                 // parameter fields
+                // 循环每个方法参数，生成对应的类的属性
                 Class<?>[] parameterTypes = method.getParameterTypes();
                 Annotation[][] parameterAnnotations = method.getParameterAnnotations();
                 for (int i = 0; i < parameterTypes.length; i++) {
                     Class<?> type = parameterTypes[i];
                     Annotation[] annotations = parameterAnnotations[i];
+                    // 创建注解属性
                     AnnotationsAttribute attribute = new AnnotationsAttribute(classFile.getConstPool(), AnnotationsAttribute.visibleTag);
+                    // 循环每个方法参数的每个注解
                     for (Annotation annotation : annotations) {
+                        // 约束条件的注解，例如 @NotNull
                         if (annotation.annotationType().isAnnotationPresent(Constraint.class)) {
                             javassist.bytecode.annotation.Annotation ja = new javassist.bytecode.annotation.Annotation(
                                     classFile.getConstPool(), pool.getCtClass(annotation.annotationType().getName()));
+                            // 循环注解的每个方法
                             Method[] members = annotation.annotationType().getMethods();
                             for (Method member : members) {
                                 if (Modifier.isPublic(member.getModifiers())
                                         && member.getParameterTypes().length == 0
                                         && member.getDeclaringClass() == annotation.annotationType()) {
+                                    // 将注解，添加到类的属性上
                                     Object value = member.invoke(annotation, new Object[0]);
                                     if (null != value) {
                                         MemberValue memberValue = createMemberValue(
@@ -159,14 +169,21 @@ public class JValidator implements Validator {
                             attribute.addAnnotation(ja);
                         }
                     }
+                    // 创建属性
                     String fieldName = method.getName() + "Argument" + i;
                     CtField ctField = CtField.make("public " + type.getCanonicalName() + " " + fieldName + ";", pool.getCtClass(parameterClassName));
                     ctField.getFieldInfo().addAttribute(attribute);
+                    // 添加属性
                     ctClass.addField(ctField);
                 }
+                // 生成类
                 parameterClass = ctClass.toClass(clazz.getClassLoader(), null);
             }
+
+
+            // 创建 Bean 对象
             Object parameterBean = parameterClass.newInstance();
+            // 设置 Bean 对象的每个属性的值
             for (int i = 0; i < args.length; i++) {
                 Field field = parameterClass.getField(method.getName() + "Argument" + i);
                 field.set(parameterBean, args[i]);
